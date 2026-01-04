@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useAccount } from 'wagmi'
-import { TOKENS, TOKEN_NAMES } from '../../constants/tokens'
+import { TOKENS } from '../../constants/tokens'
 import TokenSelector from '../Swap/TokenSelector'
-import TokenBalance from '../Common/TokenBalance'
 
 export default function PaymentInterface() {
   const { address, isConnected } = useAccount()
@@ -57,7 +56,7 @@ export default function PaymentInterface() {
           data: transferData,
           value: '0x0'
         }],
-      })
+      }) as string
 
       setTxStatus(`✅ Payment sent! TX: ${txHash.substring(0, 10)}...`)
       
@@ -99,9 +98,6 @@ export default function PaymentInterface() {
               options={availableTokens}
               onChange={(token: string) => setSelectedToken(token)}
             />
-            <div className="mt-2">
-              <TokenBalance token={selectedToken} />
-            </div>
           </div>
 
           {/* Recipient Address */}
