@@ -52,14 +52,14 @@ export default function EnhancedSwapInterface() {
   const hasEnoughGas = nativeBalanceValue > 0.001
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl p-6">
+    <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Swap Tokens</h2>
+        <h2 className="text-2xl font-bold text-white">Swap Tokens</h2>
         {/* Native Balance Badge */}
         {isConnected && nativeBalance && (
-          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-lg px-3 py-1.5">
-            <div className="text-xs text-gray-600">TEMPO Balance</div>
-            <div className="text-sm font-bold text-gray-800">
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg px-3 py-1.5">
+            <div className="text-xs text-gray-400">TEMPO Balance</div>
+            <div className="text-sm font-bold text-white">
               {nativeBalanceValue.toFixed(4)}
             </div>
           </div>
