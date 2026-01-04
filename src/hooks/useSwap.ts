@@ -83,7 +83,6 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
     data: quote, 
     isLoading: isLoadingQuote, 
     error: quoteError,
-    refetch: refetchQuote
   } = useReadContract({
     address: isAddress(DEX_CONTRACT) ? DEX_CONTRACT as `0x${string}` : undefined,
     abi: dexAbi,
