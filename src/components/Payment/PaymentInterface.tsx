@@ -30,12 +30,11 @@ export default function PaymentInterface() {
         throw new Error('MetaMask not found')
       }
 
-      const amountInSmallestUnit = Math.floor(parseFloat(amount) * 1e6) // 6 decimals
+      const amountInSmallestUnit = Math.floor(parseFloat(amount) * 1e6)
       const recipientPadded = recipient.slice(2).padStart(64, '0')
       const amountHex = amountInSmallestUnit.toString(16).padStart(64, '0')
       let transferData = '0xa9059cbb' + recipientPadded + amountHex
 
-      // Add memo
       const fullMemo = memo && memo.trim() 
         ? `${memoPrefix} (${memo.trim()})` 
         : memoPrefix
@@ -60,7 +59,6 @@ export default function PaymentInterface() {
 
       setTxStatus(`✅ Payment sent! TX: ${txHash.substring(0, 10)}...`)
       
-      // Clear form
       setRecipient('')
       setAmount('')
       setMemo('')
@@ -74,35 +72,37 @@ export default function PaymentInterface() {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-      <div className="flex items-center gap-2 mb-6">
-        <span className="text-2xl">💸</span>
-        <h2 className="text-2xl font-bold text-gray-800">Send Payment</h2>
-      </div>
-
+    <div className="bg-white rounded-2xl shadow-xl p-8 border border-purple-100">
       {!isConnected ? (
-        <div className="text-center py-16 px-4">
-          <div className="text-6xl mb-4">🔐</div>
-          <p className="text-gray-600 text-lg mb-2">Connect Your Wallet</p>
-          <p className="text-gray-400 text-sm">Please connect your wallet to send payments</p>
+        <div className="text-center py-20 px-4">
+          <div className="bg-gradient-to-br from-green-100 to-emerald-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="text-5xl">💸</div>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-800 mb-3">Send Payment</h3>
+          <p className="text-gray-500 mb-6">Connect your wallet to send stablecoin payments with memos</p>
+          <div className="inline-block px-6 py-2 bg-green-50 text-green-700 rounded-full text-sm font-medium">
+            Connect wallet above ↗️
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
           {/* Token Selection */}
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
-            <label className="block text-sm text-gray-600 font-medium mb-2">
+          <div>
+            <label className="block text-sm font-semibold text-gray-600 mb-2">
               Select Token
             </label>
-            <TokenSelector
-              selected={selectedToken}
-              options={availableTokens}
-              onChange={(token: string) => setSelectedToken(token)}
-            />
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-4 border-2 border-purple-200">
+              <TokenSelector
+                selected={selectedToken}
+                options={availableTokens}
+                onChange={(token: string) => setSelectedToken(token)}
+              />
+            </div>
           </div>
 
           {/* Recipient Address */}
-          <div className="bg-gray-50 rounded-xl p-4">
-            <label className="block text-sm text-gray-600 font-medium mb-2">
+          <div>
+            <label className="block text-sm font-semibold text-gray-600 mb-2">
               Recipient Address
             </label>
             <input
@@ -110,13 +110,13 @@ export default function PaymentInterface() {
               value={recipient}
               onChange={(e) => setRecipient(e.target.value)}
               placeholder="0x..."
-              className="w-full bg-white border-2 border-gray-200 rounded-xl px-4 py-3 font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+              className="w-full bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-2xl px-5 py-4 font-mono text-sm focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 transition-all"
             />
           </div>
 
           {/* Amount */}
-          <div className="bg-gray-50 rounded-xl p-4">
-            <label className="block text-sm text-gray-600 font-medium mb-2">
+          <div>
+            <label className="block text-sm font-semibold text-gray-600 mb-2">
               Amount
             </label>
             <input
@@ -126,18 +126,18 @@ export default function PaymentInterface() {
               placeholder="0.00"
               step="0.01"
               min="0"
-              className="w-full bg-white border-2 border-gray-200 rounded-xl px-4 py-3 text-xl font-semibold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+              className="w-full bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl px-5 py-4 text-2xl font-bold focus:outline-none focus:border-green-400 focus:ring-4 focus:ring-green-100 transition-all"
             />
           </div>
 
           {/* Memo */}
-          <div className="bg-gray-50 rounded-xl p-4">
-            <label className="block text-sm text-gray-600 font-medium mb-2">
+          <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-5 border-2 border-yellow-200">
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
               Payment Memo
             </label>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg">
-                <span className="font-mono text-sm text-gray-700 font-semibold">{memoPrefix}</span>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-yellow-300 rounded-xl">
+                <span className="font-mono text-sm text-gray-800 font-bold">{memoPrefix}</span>
                 <span className="text-gray-400">|</span>
                 <span className="text-xs text-gray-500">Invoice prefix (fixed)</span>
               </div>
@@ -146,13 +146,13 @@ export default function PaymentInterface() {
                 onChange={(e) => setMemo(e.target.value)}
                 placeholder="Add custom note (optional)..."
                 rows={2}
-                className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 resize-none transition-all"
+                className="w-full px-4 py-3 bg-white border-2 border-yellow-200 rounded-xl focus:outline-none focus:border-yellow-400 focus:ring-4 focus:ring-yellow-100 resize-none transition-all"
               />
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-xs text-blue-700">
-                  <span className="font-semibold">Preview:</span> {memo && memo.trim() ? `${memoPrefix} (${memo.trim()})` : memoPrefix}
+              <div className="bg-blue-100 border-2 border-blue-300 rounded-xl p-3">
+                <p className="text-xs text-blue-800">
+                  <span className="font-bold">Preview:</span> {memo && memo.trim() ? `${memoPrefix} (${memo.trim()})` : memoPrefix}
                 </p>
-                <p className="text-xs text-blue-600 mt-1">
+                <p className="text-xs text-blue-700 mt-1">
                   💡 This memo will be stored onchain and visible on block explorer
                 </p>
               </div>
@@ -160,21 +160,21 @@ export default function PaymentInterface() {
           </div>
 
           {/* Gasless Payment Option */}
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4">
-            <div className="flex items-start gap-3">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-5">
+            <div className="flex items-start gap-4">
               <input
                 type="checkbox"
                 id="gasless"
                 checked={useGaslessPayment}
                 onChange={(e) => setUseGaslessPayment(e.target.checked)}
-                className="mt-1 w-5 h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                className="mt-1 w-6 h-6 text-green-600 rounded-lg focus:ring-2 focus:ring-green-500"
               />
               <div className="flex-1">
-                <label htmlFor="gasless" className="flex items-center gap-2 cursor-pointer">
-                  <span className="font-semibold text-green-800">🎁 Gasless Payment</span>
-                  <span className="px-2 py-0.5 bg-green-200 text-green-700 text-xs rounded-full font-semibold">BETA</span>
+                <label htmlFor="gasless" className="flex items-center gap-2 cursor-pointer mb-2">
+                  <span className="font-bold text-green-800 text-lg">🎁 Gasless Payment</span>
+                  <span className="px-2.5 py-1 bg-green-200 text-green-800 text-xs rounded-full font-bold">NEW</span>
                 </label>
-                <p className="text-xs text-green-700 mt-1">
+                <p className="text-sm text-green-700">
                   {useGaslessPayment 
                     ? '✅ Gas fees will be sponsored - You pay ZERO gas!' 
                     : 'Enable to have gas fees paid by the dApp (no TEMPO required)'}
@@ -185,14 +185,17 @@ export default function PaymentInterface() {
 
           {/* Status Message */}
           {txStatus && (
-            <div className={`p-4 rounded-xl text-sm ${
+            <div className={`p-4 rounded-2xl text-sm font-medium border-2 flex items-start gap-3 ${
               txStatus.includes('✅') 
-                ? 'bg-green-50 border border-green-200 text-green-700'
+                ? 'bg-green-50 border-green-300 text-green-800'
                 : txStatus.includes('❌')
-                ? 'bg-red-50 border border-red-200 text-red-700'
-                : 'bg-blue-50 border border-blue-200 text-blue-700'
+                ? 'bg-red-50 border-red-300 text-red-800'
+                : 'bg-blue-50 border-blue-300 text-blue-800'
             }`}>
-              {txStatus}
+              <div className="text-xl">
+                {txStatus.includes('✅') ? '✅' : txStatus.includes('❌') ? '❌' : '⏳'}
+              </div>
+              <p className="flex-1">{txStatus}</p>
             </div>
           )}
 
@@ -200,12 +203,12 @@ export default function PaymentInterface() {
           <button
             onClick={sendPayment}
             disabled={isLoading || !recipient || !amount}
-            className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
+            className={`w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-lg ${
               isLoading || !recipient || !amount
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : useGaslessPayment
-                ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-lg hover:scale-[1.02]'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-lg hover:scale-[1.02]'
+                ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]'
+                : 'bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]'
             }`}
           >
             {isLoading 
@@ -216,16 +219,28 @@ export default function PaymentInterface() {
           </button>
 
           {/* Info Box */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-            <div className="flex gap-2">
-              <span className="text-2xl">💡</span>
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-5">
+            <div className="flex gap-3">
+              <div className="text-2xl">💡</div>
               <div className="text-sm text-gray-700">
-                <p className="font-semibold mb-1">Payment Features:</p>
-                <ul className="list-disc list-inside space-y-1 text-xs">
-                  <li>Send stablecoins with custom memos</li>
-                  <li>Memos are stored onchain permanently</li>
-                  <li>Perfect for invoices and receipts</li>
-                  <li>Optional gasless payments (testnet only)</li>
+                <p className="font-bold mb-2 text-purple-800">Payment Features:</p>
+                <ul className="space-y-1.5 text-xs">
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-600">•</span>
+                    <span>Send stablecoins with custom memos</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-600">•</span>
+                    <span>Memos are stored onchain permanently</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-600">•</span>
+                    <span>Perfect for invoices and receipts</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-600">•</span>
+                    <span>Optional gasless payments (testnet only)</span>
+                  </li>
                 </ul>
               </div>
             </div>
