@@ -5,11 +5,12 @@ import { config } from './config/wagmi'
 import ConnectWallet from './components/Wallet/ConnectWallet'
 import SwapInterface from './components/Swap/SwapInterface'
 import AddLiquidity from './components/Liquidity/AddLiquidity'
+import PaymentInterface from './components/Payment/PaymentInterface'
 
 const queryClient = new QueryClient()
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'swap' | 'liquidity'>('swap')
+  const [activeTab, setActiveTab] = useState<'swap' | 'liquidity' | 'payment'>('swap')
 
   return (
     <WagmiProvider config={config}>
@@ -25,7 +26,7 @@ function App() {
                     <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                       Tempo DEX
                     </h1>
-                    <p className="text-xs text-gray-500">Swap stablecoins on Tempo Network</p>
+                    <p className="text-xs text-gray-500">Swap & Pay on Tempo Network</p>
                   </div>
                 </div>
                 <ConnectWallet />
@@ -37,10 +38,10 @@ function App() {
           <main className="max-w-2xl mx-auto px-4 py-8">
             {/* Tab Selector */}
             <div className="bg-white rounded-2xl shadow-lg p-2 mb-6">
-              <div className="flex gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => setActiveTab('swap')}
-                  className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
+                  className={`py-3 px-4 rounded-xl font-semibold transition-all ${
                     activeTab === 'swap'
                       ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
                       : 'text-gray-600 hover:bg-gray-50'
@@ -50,7 +51,7 @@ function App() {
                 </button>
                 <button
                   onClick={() => setActiveTab('liquidity')}
-                  className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
+                  className={`py-3 px-4 rounded-xl font-semibold transition-all ${
                     activeTab === 'liquidity'
                       ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
                       : 'text-gray-600 hover:bg-gray-50'
@@ -58,12 +59,24 @@ function App() {
                 >
                   💧 Liquidity
                 </button>
+                <button
+                  onClick={() => setActiveTab('payment')}
+                  className={`py-3 px-4 rounded-xl font-semibold transition-all ${
+                    activeTab === 'payment'
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  💸 Payment
+                </button>
               </div>
             </div>
 
             {/* Content */}
             <div className="animate-fadeIn">
-              {activeTab === 'swap' ? <SwapInterface /> : <AddLiquidity />}
+              {activeTab === 'swap' && <SwapInterface />}
+              {activeTab === 'liquidity' && <AddLiquidity />}
+              {activeTab === 'payment' && <PaymentInterface />}
             </div>
 
             {/* Footer Info */}
