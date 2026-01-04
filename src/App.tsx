@@ -2,7 +2,7 @@ import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { config } from '../wagmi.config'
 import WalletConnect from './components/Common/WalletConnect'
-import SwapInterface from './components/Swap/SwapInterface'
+import EnhancedSwapInterface from './components/Swap/EnhancedSwapInterface'
 import AddLiquidity from './components/Liquidity/AddLiquidity'
 import { useState } from 'react'
 
@@ -59,7 +59,7 @@ function App() {
 
             {/* Main Content */}
             <div className="max-w-2xl mx-auto">
-              {activeTab === 'swap' ? <SwapInterface /> : <AddLiquidity />}
+              {activeTab === 'swap' ? <EnhancedSwapInterface /> : <AddLiquidity />}
             </div>
 
             {/* Footer */}
