@@ -62,18 +62,22 @@ export default function SwapInterface() {
   const isButtonDisabled = !amountIn || !quote || isSwapping || isLoadingQuote
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Swap Tokens</h2>
+    <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+      <div className="flex items-center gap-2 mb-6">
+        <span className="text-2xl">🔄</span>
+        <h2 className="text-2xl font-bold text-gray-800">Swap Tokens</h2>
+      </div>
 
       {!isConnected ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 mb-4">Please connect your wallet to swap</p>
-          <div className="text-4xl">🔐</div>
+        <div className="text-center py-16 px-4">
+          <div className="text-6xl mb-4">🔐</div>
+          <p className="text-gray-600 text-lg mb-2">Connect Your Wallet</p>
+          <p className="text-gray-400 text-sm">Please connect your wallet to start swapping</p>
         </div>
       ) : (
         <div className="space-y-4">
           {/* Token Input */}
-          <div className="bg-gray-50 rounded-xl p-4">
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
             <div className="flex justify-between mb-2">
               <label className="text-sm text-gray-600 font-medium">From</label>
               <TokenBalance token={tokenIn} />
@@ -84,7 +88,7 @@ export default function SwapInterface() {
                 value={amountIn}
                 onChange={(e) => setAmountIn(e.target.value)}
                 placeholder="0.0"
-                className="flex-1 bg-white border-2 border-gray-200 rounded-lg px-4 py-3 text-xl font-semibold focus:outline-none focus:border-indigo-500"
+                className="flex-1 bg-white border-2 border-gray-200 rounded-xl px-4 py-3 text-xl font-semibold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
                 step="0.01"
               />
               <TokenSelector
@@ -99,7 +103,7 @@ export default function SwapInterface() {
           <div className="flex justify-center -my-2 relative z-10">
             <button
               onClick={handleFlipTokens}
-              className="bg-white border-4 border-gray-100 rounded-full p-2 hover:bg-gray-50 transition-all hover:rotate-180 duration-300"
+              className="bg-white border-4 border-indigo-100 rounded-full p-3 hover:bg-indigo-50 hover:border-indigo-200 transition-all hover:rotate-180 duration-300 shadow-md"
             >
               <svg
                 className="w-6 h-6 text-indigo-600"
@@ -118,7 +122,7 @@ export default function SwapInterface() {
           </div>
 
           {/* Token Output */}
-          <div className="bg-gray-50 rounded-xl p-4">
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
             <div className="flex justify-between mb-2">
               <label className="text-sm text-gray-600 font-medium">To</label>
               <TokenBalance token={tokenOut} />

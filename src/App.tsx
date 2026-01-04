@@ -1,10 +1,10 @@
+import { useState } from 'react'
 import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { config } from '../wagmi.config'
-import WalletConnect from './components/Common/WalletConnect'
-import EnhancedSwapInterface from './components/Swap/EnhancedSwapInterface'
+import { config } from './config/wagmi'
+import ConnectWallet from './components/Wallet/ConnectWallet'
+import SwapInterface from './components/Swap/SwapInterface'
 import AddLiquidity from './components/Liquidity/AddLiquidity'
-import { useState } from 'react'
 
 const queryClient = new QueryClient()
 
@@ -14,31 +14,35 @@ function App() {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-          <div className="container mx-auto px-4 py-8">
-            {/* Header */}
-            <header className="mb-8">
-              <h1 className="text-4xl font-bold text-center text-indigo-900 mb-2">
-                🚀 Tempo DEX
-              </h1>
-              <p className="text-center text-gray-600">
-                Swap stablecoins on Tempo Network
-              </p>
-            </header>
-
-            {/* Wallet Connect */}
-            <div className="flex justify-end mb-6">
-              <WalletConnect />
+        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+          {/* Header */}
+          <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex justify-between items-center py-4">
+                <div className="flex items-center gap-3">
+                  <div className="text-3xl">💱</div>
+                  <div>
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                      Tempo DEX
+                    </h1>
+                    <p className="text-xs text-gray-500">Swap stablecoins on Tempo Network</p>
+                  </div>
+                </div>
+                <ConnectWallet />
+              </div>
             </div>
+          </header>
 
-            {/* Tabs */}
-            <div className="max-w-2xl mx-auto mb-6">
-              <div className="flex gap-2 bg-white rounded-lg p-1 shadow-sm">
+          {/* Main Content */}
+          <main className="max-w-2xl mx-auto px-4 py-8">
+            {/* Tab Selector */}
+            <div className="bg-white rounded-2xl shadow-lg p-2 mb-6">
+              <div className="flex gap-2">
                 <button
                   onClick={() => setActiveTab('swap')}
-                  className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${
+                  className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
                     activeTab === 'swap'
-                      ? 'bg-indigo-600 text-white shadow-md'
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
                       : 'text-gray-600 hover:bg-gray-50'
                   }`}
                 >
@@ -46,9 +50,9 @@ function App() {
                 </button>
                 <button
                   onClick={() => setActiveTab('liquidity')}
-                  className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${
+                  className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
                     activeTab === 'liquidity'
-                      ? 'bg-indigo-600 text-white shadow-md'
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
                       : 'text-gray-600 hover:bg-gray-50'
                   }`}
                 >
@@ -57,26 +61,26 @@ function App() {
               </div>
             </div>
 
-            {/* Main Content */}
-            <div className="max-w-2xl mx-auto">
-              {activeTab === 'swap' ? <EnhancedSwapInterface /> : <AddLiquidity />}
+            {/* Content */}
+            <div className="animate-fadeIn">
+              {activeTab === 'swap' ? <SwapInterface /> : <AddLiquidity />}
             </div>
 
-            {/* Footer */}
-            <footer className="mt-12 text-center text-gray-500 text-sm">
-              <p>Powered by Tempo Network | Testnet</p>
-              <p className="mt-2">
-                <a 
-                  href="https://docs.tempo.xyz" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-indigo-600 hover:underline"
-                >
-                  📚 Documentation
-                </a>
+            {/* Footer Info */}
+            <div className="mt-8 text-center">
+              <p className="text-sm text-gray-500 mb-2">
+                Powered by Tempo Network | Testnet
               </p>
-            </footer>
-          </div>
+              <a
+                href="https://docs.tempo.xyz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-indigo-600 hover:text-indigo-700 underline"
+              >
+                📚 Documentation
+              </a>
+            </div>
+          </main>
         </div>
       </QueryClientProvider>
     </WagmiProvider>
