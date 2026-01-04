@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAccount } from 'wagmi'
-import { TOKENS, TOKEN_NAMES } from '../../constants/tokens'
+import { TOKENS } from '../../constants/tokens'
 import TokenSelector from './TokenSelector'
 import QuoteDisplay from './QuoteDisplay'
 import useSwap from '../../hooks/useSwap'
@@ -9,8 +9,8 @@ import TokenBalance from '../Common/TokenBalance'
 
 export default function SwapInterface() {
   const { isConnected } = useAccount()
-  const [tokenIn, setTokenIn] = useState(TOKENS.AlphaUSD)
-  const [tokenOut, setTokenOut] = useState(TOKENS.BetaUSD)
+  const [tokenIn, setTokenIn] = useState<string>(TOKENS.AlphaUSD)
+  const [tokenOut, setTokenOut] = useState<string>(TOKENS.BetaUSD)
   const [amountIn, setAmountIn] = useState('')
   const [slippage, setSlippage] = useState(0.5)
 
@@ -64,7 +64,7 @@ export default function SwapInterface() {
               <TokenSelector
                 selected={tokenIn}
                 options={availableTokens.filter((t) => t !== tokenOut)}
-                onChange={setTokenIn}
+                onChange={(token: string) => setTokenIn(token)}
               />
             </div>
           </div>
@@ -104,7 +104,7 @@ export default function SwapInterface() {
               <TokenSelector
                 selected={tokenOut}
                 options={availableTokens.filter((t) => t !== tokenIn)}
-                onChange={setTokenOut}
+                onChange={(token: string) => setTokenOut(token)}
               />
             </div>
           </div>

@@ -8,7 +8,7 @@ import useLiquidity from '../../hooks/useLiquidity'
 
 export default function AddLiquidity() {
   const { isConnected } = useAccount()
-  const [token, setToken] = useState(TOKENS.AlphaUSD)
+  const [token, setToken] = useState<string>(TOKENS.AlphaUSD)
   const [amount, setAmount] = useState('')
   const [price, setPrice] = useState('')
   const [orderType, setOrderType] = useState<'buy' | 'sell'>('buy')
@@ -86,7 +86,7 @@ export default function AddLiquidity() {
             <TokenSelector
               selected={token}
               options={availableTokens}
-              onChange={setToken}
+              onChange={(token: string) => setToken(token)}
             />
           </div>
 
