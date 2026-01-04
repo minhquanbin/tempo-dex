@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAccount, useBalance } from 'wagmi'
-import { TOKENS, TOKEN_NAMES } from '../../constants/tokens'
+import { TOKENS } from '../../constants/tokens'
 import TokenSelector from './TokenSelector'
 import QuoteDisplay from './QuoteDisplay'
 import useSwap from '../../hooks/useSwap'
@@ -10,8 +10,8 @@ import { Sparkles, AlertCircle } from 'lucide-react'
 
 export default function EnhancedSwapInterface() {
   const { isConnected, address } = useAccount()
-  const [tokenIn, setTokenIn] = useState(TOKENS.AlphaUSD)
-  const [tokenOut, setTokenOut] = useState(TOKENS.BetaUSD)
+  const [tokenIn, setTokenIn] = useState<string>(TOKENS.AlphaUSD)
+  const [tokenOut, setTokenOut] = useState<string>(TOKENS.BetaUSD)
   const [amountIn, setAmountIn] = useState('')
   const [slippage, setSlippage] = useState(0.5)
   const [useGasless, setUseGasless] = useState(false)
@@ -22,7 +22,7 @@ export default function EnhancedSwapInterface() {
     address: address,
   })
 
-  const { quote, isLoadingQuote, executeSwap, isSwapping, error } = useSwap({
+  const { quote, isLoadingQuote, executeSwap, isSwapping, error, txHash } = useSwap({
     tokenIn,
     tokenOut,
     amountIn: amountIn ? parseTokenAmount(amountIn) : 0n,
@@ -39,15 +39,17 @@ export default function EnhancedSwapInterface() {
   }
 
   const handleFlipTokens = () => {
+    const temp = tokenIn
     setTokenIn(tokenOut)
-    setTokenOut(tokenIn)
+    setTokenOut(temp)
     setAmountIn('')
   }
 
   const availableTokens = [TOKENS.AlphaUSD, TOKENS.BetaUSD, TOKENS.ThetaUSD]
 
   // Check if user has enough native balance for gas
-  const hasEnoughGas = nativeBalance && parseFloat(nativeBalance.formatted) > 0.001
+  const nativeBalanceValue = nativeBalance?.value ? Number(nativeBalance.value) / 1e18 : 0
+  const hasEnoughGas = nativeBalanceValue > 0.001
 
   return (
     <div className="bg-white rounded-2xl shadow-2xl p-6">
@@ -58,7 +60,7 @@ export default function EnhancedSwapInterface() {
           <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-lg px-3 py-1.5">
             <div className="text-xs text-gray-600">TEMPO Balance</div>
             <div className="text-sm font-bold text-gray-800">
-              {parseFloat(nativeBalance.formatted).toFixed(4)}
+              {nativeBalanceValue.toFixed(4)}
             </div>
           </div>
         )}
@@ -89,7 +91,7 @@ export default function EnhancedSwapInterface() {
               <TokenSelector
                 selected={tokenIn}
                 options={availableTokens.filter((t) => t !== tokenOut)}
-                onChange={setTokenIn}
+                onChange={(token: string) => setTokenIn(token)}
               />
             </div>
           </div>
@@ -129,7 +131,7 @@ export default function EnhancedSwapInterface() {
               <TokenSelector
                 selected={tokenOut}
                 options={availableTokens.filter((t) => t !== tokenIn)}
-                onChange={setTokenOut}
+                onChange={(token: string) => setTokenOut(token)}
               />
             </div>
           </div>
@@ -243,6 +245,16 @@ export default function EnhancedSwapInterface() {
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
               <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          )}
+
+          {/* Success Display */}
+          {txHash && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <p className="text-green-800 text-sm font-semibold">✅ Transaction sent!</p>
+              <p className="text-green-600 text-xs mt-1 font-mono break-all">
+                TX: {txHash}
+              </p>
             </div>
           )}
 

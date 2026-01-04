@@ -9,6 +9,8 @@ interface UseSwapProps {
   tokenOut: string
   amountIn: bigint
   slippage: number
+  useGasless?: boolean
+  memo?: string
 }
 
 // DEX ABI - Tempo Stablecoin Exchange uses uint128 (not uint256!)
@@ -60,12 +62,30 @@ const erc20Abi = [
     stateMutability: 'view',
     type: 'function',
   },
+  {
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    name: 'transfer',
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
 ] as const
 
-export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSwapProps) {
+export default function useSwap({ 
+  tokenIn, 
+  tokenOut, 
+  amountIn, 
+  slippage,
+  useGasless = false,
+  memo = ''
+}: UseSwapProps) {
   const { address } = useAccount()
   const [error, setError] = useState<string | null>(null)
   const [needsApproval, setNeedsApproval] = useState(false)
+  const [txHash, setTxHash] = useState<string | null>(null)
 
   // Validate inputs before making any contract calls
   const isValidInput = 
@@ -222,6 +242,7 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
   // Clear error when inputs change
   useEffect(() => {
     setError(null)
+    setTxHash(null)
     resetApprove()
     resetSwap()
   }, [tokenIn, tokenOut, amountIn, resetApprove, resetSwap])
@@ -233,6 +254,14 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
       refetchAllowance()
     }
   }, [isApproveSuccess, refetchAllowance])
+
+  // Store swap hash when successful
+  useEffect(() => {
+    if (swapHash) {
+      setTxHash(swapHash)
+      console.log('Swap transaction hash:', swapHash)
+    }
+  }, [swapHash])
 
   const executeSwap = async () => {
     if (!quote || !address) {
@@ -252,6 +281,7 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
 
     try {
       setError(null)
+      setTxHash(null)
 
       // Step 1: Approve token if needed
       if (needsApproval) {
@@ -273,36 +303,181 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
         return // Wait for approval before swapping
       }
 
-      // Step 2: Execute swap
-      console.log('Executing swap...', {
-        tokenIn,
-        tokenOut,
-        amountIn: amountIn.toString(),
-        quote: quote.toString(),
-        slippage
-      })
-
-      const minAmountOut = quote - (quote * BigInt(Math.floor(slippage * 100))) / 10000n
-
-      if (minAmountOut <= 0n) {
-        setError('Slippage too high, minimum output would be zero')
-        return
+      // Step 2: Execute swap (normal or gasless)
+      if (useGasless) {
+        await executeGaslessSwap()
+      } else {
+        await executeNormalSwap()
       }
-
-      swap({
-        address: DEX_CONTRACT as `0x${string}`,
-        abi: dexAbi,
-        functionName: 'swapExactAmountIn',
-        args: [
-          tokenIn as `0x${string}`,
-          tokenOut as `0x${string}`,
-          amountIn,
-          minAmountOut,
-        ],
-      })
     } catch (err: any) {
       console.error('Swap execution error:', err)
       setError(err.shortMessage || err.message || 'Operation failed. Please try again.')
+    }
+  }
+
+  const executeNormalSwap = async () => {
+    if (!quote || !address || !window.ethereum) {
+      setError('Missing required parameters')
+      return
+    }
+
+    console.log('💸 Executing normal swap...', {
+      tokenIn,
+      tokenOut,
+      amountIn: amountIn.toString(),
+      quote: quote.toString(),
+      slippage,
+      memo: memo || 'none'
+    })
+
+    const minAmountOut = quote - (quote * BigInt(Math.floor(slippage * 100))) / 10000n
+
+    if (minAmountOut <= 0n) {
+      setError('Slippage too high, minimum output would be zero')
+      return
+    }
+
+    // If memo provided, use eth_sendTransaction with custom data
+    if (memo && memo.trim()) {
+      try {
+        // Build function selector for swapExactAmountIn
+        const functionSelector = '0x8201aa3f' // keccak256("swapExactAmountIn(address,address,uint128,uint128)")
+        
+        // Encode parameters
+        const tokenInPadded = tokenIn.slice(2).padStart(64, '0')
+        const tokenOutPadded = tokenOut.slice(2).padStart(64, '0')
+        const amountInHex = amountIn.toString(16).padStart(32, '0') // uint128 = 16 bytes = 32 hex chars
+        const minAmountOutHex = minAmountOut.toString(16).padStart(32, '0')
+        
+        let txData = functionSelector + tokenInPadded + tokenOutPadded + amountInHex + minAmountOutHex
+        
+        // Append memo
+        const memoBytes = new TextEncoder().encode(memo.trim())
+        const memoHex = Array.from(memoBytes)
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('')
+        txData += memoHex
+        
+        console.log('📝 Memo added to transaction:', memo)
+        
+        const hash = await window.ethereum.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: address,
+            to: DEX_CONTRACT,
+            data: txData,
+            value: '0x0'
+          }],
+        }) as string
+
+        setTxHash(hash)
+        console.log('✅ Normal swap with memo executed:', hash)
+        return
+      } catch (err) {
+        console.error('Failed to send with memo, falling back to wagmi...', err)
+        // Fall through to wagmi method below
+      }
+    }
+
+    // Standard swap without memo or as fallback
+    swap({
+      address: DEX_CONTRACT as `0x${string}`,
+      abi: dexAbi,
+      functionName: 'swapExactAmountIn',
+      args: [
+        tokenIn as `0x${string}`,
+        tokenOut as `0x${string}`,
+        amountIn,
+        minAmountOut,
+      ],
+    })
+  }
+
+  const executeGaslessSwap = async () => {
+    if (!quote || !address || !window.ethereum) {
+      setError('Missing required parameters')
+      return
+    }
+
+    console.log('🎁 Executing gasless swap...')
+
+    const minAmountOut = quote - (quote * BigInt(Math.floor(slippage * 100))) / 10000n
+
+    if (minAmountOut <= 0n) {
+      setError('Slippage too high, minimum output would be zero')
+      return
+    }
+
+    // Build transaction data
+    const functionSelector = '0x8201aa3f'
+    const tokenInPadded = tokenIn.slice(2).padStart(64, '0')
+    const tokenOutPadded = tokenOut.slice(2).padStart(64, '0')
+    const amountInHex = amountIn.toString(16).padStart(32, '0')
+    const minAmountOutHex = minAmountOut.toString(16).padStart(32, '0')
+    
+    let txData = functionSelector + tokenInPadded + tokenOutPadded + amountInHex + minAmountOutHex
+    
+    // Append memo with [GASLESS] prefix
+    const fullMemo = memo && memo.trim() 
+      ? `[GASLESS] ${memo.trim()}` 
+      : '[GASLESS]'
+    
+    const memoBytes = new TextEncoder().encode(fullMemo)
+    const memoHex = Array.from(memoBytes)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+    txData += memoHex
+    console.log('📝 Gasless memo added:', fullMemo)
+
+    const txPayload = {
+      from: address,
+      to: DEX_CONTRACT,
+      data: txData,
+      value: '0x0',
+      gasLimit: '0x100000' // 1M gas
+    }
+
+    try {
+      // Try fee payer service
+      const feePayerUrl = 'https://sponsor.testnet.tempo.xyz'
+      
+      const response = await fetch(feePayerUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          transaction: txPayload,
+          chainId: 41144114 // Tempo testnet
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Fee payer service unavailable')
+      }
+
+      const { sponsoredTx } = await response.json()
+
+      const hash = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [sponsoredTx],
+      }) as string
+
+      setTxHash(hash)
+      console.log('✅ Gasless swap executed:', hash)
+      
+    } catch (feePayerError) {
+      console.error('Fee payer error:', feePayerError)
+      console.log('⚠️ Falling back to normal transaction...')
+      
+      // Fallback to normal transaction
+      const hash = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [txPayload],
+      }) as string
+
+      setTxHash(hash)
+      console.log('✅ Swap executed (normal fallback):', hash)
     }
   }
 
@@ -315,5 +490,6 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
     isSwapSuccess,
     needsApproval,
     error,
+    txHash,
   }
 }
