@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { DEX_CONTRACT } from '../constants/tokens'
 import { calculateMaxAmountIn } from '../utils/slippage'
+import { isAddress } from 'viem'
 
 interface UseSwapProps {
   tokenIn: string
@@ -37,7 +38,7 @@ const dexAbi = [
   },
 ] as const
 
-// ERC20 ABI for approve
+// ERC20 ABI for approve and allowance
 const erc20Abi = [
   {
     inputs: [
@@ -66,6 +67,17 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
   const [error, setError] = useState<string | null>(null)
   const [needsApproval, setNeedsApproval] = useState(false)
 
+  // Validate inputs before making any contract calls
+  const isValidInput = 
+    amountIn > 0n && 
+    !!address && 
+    !!tokenIn && 
+    !!tokenOut && 
+    isAddress(tokenIn) && 
+    isAddress(tokenOut) &&
+    isAddress(DEX_CONTRACT) &&
+    tokenIn.toLowerCase() !== tokenOut.toLowerCase()
+
   // Get quote from DEX
   const { 
     data: quote, 
@@ -73,24 +85,30 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
     error: quoteError,
     refetch: refetchQuote
   } = useReadContract({
-    address: DEX_CONTRACT as `0x${string}`,
+    address: isAddress(DEX_CONTRACT) ? DEX_CONTRACT as `0x${string}` : undefined,
     abi: dexAbi,
     functionName: 'getQuote',
-    args: amountIn > 0n ? [tokenIn as `0x${string}`, tokenOut as `0x${string}`, amountIn] : undefined,
+    args: isValidInput 
+      ? [tokenIn as `0x${string}`, tokenOut as `0x${string}`, amountIn] 
+      : undefined,
     query: {
-      enabled: amountIn > 0n && !!address && !!tokenIn && !!tokenOut,
-      retry: 2,
+      enabled: isValidInput,
+      retry: 1,
+      retryDelay: 1000,
     },
   })
 
   // Check current allowance
-  const { data: currentAllowance } = useReadContract({
-    address: tokenIn as `0x${string}`,
+  const { data: currentAllowance, refetch: refetchAllowance } = useReadContract({
+    address: isAddress(tokenIn) ? tokenIn as `0x${string}` : undefined,
     abi: erc20Abi,
     functionName: 'allowance',
-    args: address && tokenIn ? [address, DEX_CONTRACT as `0x${string}`] : undefined,
+    args: address && isAddress(tokenIn) && isAddress(DEX_CONTRACT)
+      ? [address, DEX_CONTRACT as `0x${string}`] 
+      : undefined,
     query: {
-      enabled: !!address && !!tokenIn,
+      enabled: !!address && isAddress(tokenIn) && isAddress(DEX_CONTRACT),
+      retry: 1,
     },
   })
 
@@ -98,6 +116,8 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
   useEffect(() => {
     if (currentAllowance !== undefined && amountIn > 0n) {
       setNeedsApproval(currentAllowance < amountIn)
+    } else {
+      setNeedsApproval(true)
     }
   }, [currentAllowance, amountIn])
 
@@ -106,12 +126,14 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
     writeContract: approve, 
     data: approveHash,
     isPending: isApprovePending,
-    error: approveError
+    error: approveError,
+    reset: resetApprove
   } = useWriteContract()
 
   const { 
     isLoading: isApproveConfirming,
-    isSuccess: isApproveSuccess 
+    isSuccess: isApproveSuccess,
+    error: approveReceiptError
   } = useWaitForTransactionReceipt({
     hash: approveHash,
   })
@@ -121,12 +143,14 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
     writeContract: swap, 
     data: swapHash,
     isPending: isSwapPending,
-    error: swapError
+    error: swapError,
+    reset: resetSwap
   } = useWriteContract()
 
   const { 
     isLoading: isSwapConfirming,
-    isSuccess: isSwapSuccess 
+    isSuccess: isSwapSuccess,
+    error: swapReceiptError
   } = useWaitForTransactionReceipt({
     hash: swapHash,
   })
@@ -134,13 +158,17 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
   // Handle quote errors
   useEffect(() => {
     if (quoteError) {
+      console.error('Quote error details:', quoteError)
       const errorMessage = quoteError.message || ''
+      
       if (errorMessage.includes('InsufficientLiquidity')) {
         setError('Not enough liquidity available. Try a smaller amount.')
+      } else if (errorMessage.includes('contract')) {
+        setError('DEX contract not found. Please check contract address.')
       } else if (errorMessage.includes('execution reverted')) {
-        setError('Transaction would fail. Please check the amounts.')
+        setError('Cannot get quote. The pair may not exist.')
       } else {
-        setError('Failed to get quote. Please try again.')
+        setError('Failed to get quote. Please check your inputs.')
       }
     }
   }, [quoteError])
@@ -149,26 +177,71 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
   useEffect(() => {
     if (approveError) {
       console.error('Approve error:', approveError)
-      setError('Failed to approve token. Please try again.')
+      const errorMessage = approveError.message || ''
+      
+      if (errorMessage.includes('User denied') || errorMessage.includes('User rejected')) {
+        setError('Transaction rejected by user.')
+      } else {
+        setError('Failed to approve token. Please try again.')
+      }
     }
   }, [approveError])
+
+  // Handle approve receipt errors
+  useEffect(() => {
+    if (approveReceiptError) {
+      console.error('Approve receipt error:', approveReceiptError)
+      setError('Approval transaction failed.')
+    }
+  }, [approveReceiptError])
 
   // Handle swap errors
   useEffect(() => {
     if (swapError) {
       console.error('Swap error:', swapError)
-      setError('Swap failed. Please try again.')
+      const errorMessage = swapError.message || ''
+      
+      if (errorMessage.includes('User denied') || errorMessage.includes('User rejected')) {
+        setError('Transaction rejected by user.')
+      } else if (errorMessage.includes('insufficient funds')) {
+        setError('Insufficient funds for gas or amount.')
+      } else {
+        setError('Swap failed. Please try again.')
+      }
     }
   }, [swapError])
+
+  // Handle swap receipt errors
+  useEffect(() => {
+    if (swapReceiptError) {
+      console.error('Swap receipt error:', swapReceiptError)
+      setError('Swap transaction failed.')
+    }
+  }, [swapReceiptError])
 
   // Clear error when inputs change
   useEffect(() => {
     setError(null)
-  }, [tokenIn, tokenOut, amountIn])
+    resetApprove()
+    resetSwap()
+  }, [tokenIn, tokenOut, amountIn, resetApprove, resetSwap])
+
+  // Refetch allowance after successful approval
+  useEffect(() => {
+    if (isApproveSuccess) {
+      console.log('Approval successful, refetching allowance...')
+      refetchAllowance()
+    }
+  }, [isApproveSuccess, refetchAllowance])
 
   const executeSwap = async () => {
-    if (!quote || !address || !tokenIn || !tokenOut) {
+    if (!quote || !address) {
       setError('Missing required parameters')
+      return
+    }
+
+    if (!isValidInput) {
+      setError('Invalid input parameters')
       return
     }
 
@@ -197,12 +270,10 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
           args: [DEX_CONTRACT as `0x${string}`, maxAmountIn],
         })
 
-        // Don't continue - wait for approval to complete
-        // The user will need to click swap again after approval
-        return
+        return // Wait for approval before swapping
       }
 
-      // Step 2: Execute swap (only if already approved or approval just completed)
+      // Step 2: Execute swap
       console.log('Executing swap...', {
         tokenIn,
         tokenOut,
@@ -212,6 +283,11 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
       })
 
       const minAmountOut = quote - (quote * BigInt(Math.floor(slippage * 100))) / 10000n
+
+      if (minAmountOut <= 0n) {
+        setError('Slippage too high, minimum output would be zero')
+        return
+      }
 
       swap({
         address: DEX_CONTRACT as `0x${string}`,
@@ -226,22 +302,13 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
       })
     } catch (err: any) {
       console.error('Swap execution error:', err)
-      setError(err.shortMessage || err.message || 'Swap failed. Please try again.')
+      setError(err.shortMessage || err.message || 'Operation failed. Please try again.')
     }
   }
 
-  // Auto-execute swap after successful approval
-  useEffect(() => {
-    if (isApproveSuccess && !isSwapSuccess && quote && amountIn > 0n) {
-      console.log('Approval successful, ready to swap')
-      // Refetch quote to ensure it's still valid
-      refetchQuote()
-    }
-  }, [isApproveSuccess, isSwapSuccess, quote, amountIn, refetchQuote])
-
   return {
-    quote,
-    isLoadingQuote,
+    quote: isValidInput ? quote : null,
+    isLoadingQuote: isValidInput && isLoadingQuote,
     executeSwap,
     isSwapping: isApprovePending || isApproveConfirming || isSwapPending || isSwapConfirming,
     isApproveSuccess,
