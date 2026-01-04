@@ -11,16 +11,16 @@ interface UseSwapProps {
   slippage: number
 }
 
-// DEX ABI - simplified for swap operations
+// DEX ABI - Tempo Stablecoin Exchange uses uint128 (not uint256!)
 const dexAbi = [
   {
     inputs: [
       { name: 'tokenIn', type: 'address' },
       { name: 'tokenOut', type: 'address' },
-      { name: 'amountIn', type: 'uint256' },
+      { name: 'amountIn', type: 'uint128' },
     ],
-    name: 'getQuote',
-    outputs: [{ name: 'amountOut', type: 'uint256' }],
+    name: 'quoteSwapExactAmountIn',
+    outputs: [{ name: 'amountOut', type: 'uint128' }],
     stateMutability: 'view',
     type: 'function',
   },
@@ -28,11 +28,11 @@ const dexAbi = [
     inputs: [
       { name: 'tokenIn', type: 'address' },
       { name: 'tokenOut', type: 'address' },
-      { name: 'amountIn', type: 'uint256' },
-      { name: 'minAmountOut', type: 'uint256' },
+      { name: 'amountIn', type: 'uint128' },
+      { name: 'minAmountOut', type: 'uint128' },
     ],
-    name: 'swap',
-    outputs: [],
+    name: 'swapExactAmountIn',
+    outputs: [{ name: 'amountOut', type: 'uint128' }],
     stateMutability: 'nonpayable',
     type: 'function',
   },
@@ -70,6 +70,7 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
   // Validate inputs before making any contract calls
   const isValidInput = 
     amountIn > 0n && 
+    amountIn <= BigInt('0xffffffffffffffffffffffffffffffff') && // Max uint128
     !!address && 
     !!tokenIn && 
     !!tokenOut && 
@@ -86,7 +87,7 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
   } = useReadContract({
     address: isAddress(DEX_CONTRACT) ? DEX_CONTRACT as `0x${string}` : undefined,
     abi: dexAbi,
-    functionName: 'getQuote',
+    functionName: 'quoteSwapExactAmountIn',
     args: isValidInput 
       ? [tokenIn as `0x${string}`, tokenOut as `0x${string}`, amountIn] 
       : undefined,
@@ -291,7 +292,7 @@ export default function useSwap({ tokenIn, tokenOut, amountIn, slippage }: UseSw
       swap({
         address: DEX_CONTRACT as `0x${string}`,
         abi: dexAbi,
-        functionName: 'swap',
+        functionName: 'swapExactAmountIn',
         args: [
           tokenIn as `0x${string}`,
           tokenOut as `0x${string}`,
