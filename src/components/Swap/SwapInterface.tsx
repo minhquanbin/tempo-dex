@@ -14,7 +14,16 @@ export default function SwapInterface() {
   const [amountIn, setAmountIn] = useState('')
   const [slippage, setSlippage] = useState(0.5)
 
-  const { quote, isLoadingQuote, executeSwap, isSwapping, error } = useSwap({
+  const { 
+    quote, 
+    isLoadingQuote, 
+    executeSwap, 
+    isSwapping, 
+    needsApproval,
+    isApproveSuccess,
+    isSwapSuccess,
+    error 
+  } = useSwap({
     tokenIn,
     tokenOut,
     amountIn: amountIn ? parseTokenAmount(amountIn) : 0n,
@@ -24,7 +33,11 @@ export default function SwapInterface() {
   const handleSwap = async () => {
     if (!amountIn || !quote) return
     await executeSwap()
-    setAmountIn('') // Reset input after swap
+    
+    // Reset input after successful swap (not after approve)
+    if (isSwapSuccess) {
+      setAmountIn('')
+    }
   }
 
   const handleFlipTokens = () => {
@@ -34,6 +47,19 @@ export default function SwapInterface() {
   }
 
   const availableTokens = [TOKENS.AlphaUSD, TOKENS.BetaUSD, TOKENS.ThetaUSD]
+
+  // Determine button text and state
+  const getButtonText = () => {
+    if (isLoadingQuote) return '⏳ Getting Quote...'
+    if (isSwapping) {
+      if (needsApproval && !isApproveSuccess) return '⏳ Approving...'
+      return '🔄 Swapping...'
+    }
+    if (needsApproval) return '✅ Approve Token'
+    return '🚀 Swap'
+  }
+
+  const isButtonDisabled = !amountIn || !quote || isSwapping || isLoadingQuote
 
   return (
     <div className="bg-white rounded-2xl shadow-2xl p-6">
@@ -120,6 +146,15 @@ export default function SwapInterface() {
             />
           )}
 
+          {/* Approval Success Message */}
+          {isApproveSuccess && needsApproval && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <p className="text-green-700 text-sm font-medium">
+                ✅ Token approved! Click the button below to complete the swap.
+              </p>
+            </div>
+          )}
+
           {/* Slippage Settings */}
           <div className="bg-blue-50 rounded-xl p-4">
             <div className="flex justify-between items-center mb-2">
@@ -157,19 +192,24 @@ export default function SwapInterface() {
           {/* Swap Button */}
           <button
             onClick={handleSwap}
-            disabled={!amountIn || !quote || isSwapping || isLoadingQuote}
+            disabled={isButtonDisabled}
             className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
-              !amountIn || !quote || isSwapping || isLoadingQuote
+              isButtonDisabled
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-lg hover:scale-[1.02]'
             }`}
           >
-            {isLoadingQuote
-              ? '⏳ Getting Quote...'
-              : isSwapping
-              ? '🔄 Swapping...'
-              : '🚀 Swap'}
+            {getButtonText()}
           </button>
+
+          {/* Info about two-step process */}
+          {needsApproval && amountIn && quote && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-blue-700 text-xs">
+                💡 <strong>Two-step process:</strong> First approve the token, then click swap again to complete the transaction.
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>
