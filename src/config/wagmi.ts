@@ -1,14 +1,14 @@
 import { http, createConfig } from 'wagmi'
-import { injected } from 'wagmi/connectors'
+import { defineChain } from 'viem'
 
-// Tempo Testnet Chain Configuration
-export const tempoTestnet = {
-  id: 41144114, // Tempo Testnet chain ID
+// Định nghĩa Tempo Testnet chain
+export const tempoTestnet = defineChain({
+  id: 41144114, // Tempo Testnet Chain ID
   name: 'Tempo Testnet',
   nativeCurrency: {
-    decimals: 18,
-    name: 'TEMPO',
+    name: 'Tempo',
     symbol: 'TEMPO',
+    decimals: 18,
   },
   rpcUrls: {
     default: {
@@ -21,21 +21,22 @@ export const tempoTestnet = {
   blockExplorers: {
     default: {
       name: 'Tempo Explorer',
-      url: 'https://testnet.temposcan.io',
+      url: 'https://explore.testnet.tempo.xyz',
     },
   },
   testnet: true,
-} as const
+})
 
-// Wagmi Config
+// Tạo Wagmi config
 export const config = createConfig({
   chains: [tempoTestnet],
-  connectors: [
-    injected({ 
-      target: 'metaMask',
-    }),
-  ],
   transports: {
     [tempoTestnet.id]: http(),
   },
 })
+
+declare module 'wagmi' {
+  interface Register {
+    config: typeof config
+  }
+}
