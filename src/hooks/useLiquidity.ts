@@ -9,27 +9,17 @@ interface AddLiquidityParams {
   orderType: 'buy' | 'sell'
 }
 
-// DEX ABI for liquidity operations
+// Tempo DEX ABI - Uses place() function with tick parameter
 const dexAbi = [
   {
     inputs: [
       { name: 'token', type: 'address' },
       { name: 'amount', type: 'uint128' },
-      { name: 'price', type: 'uint128' },
+      { name: 'orderType', type: 'uint8' }, // 0 = buy, 1 = sell
+      { name: 'tick', type: 'int24' },
     ],
-    name: 'placeBuyOrder',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'token', type: 'address' },
-      { name: 'amount', type: 'uint128' },
-      { name: 'price', type: 'uint128' },
-    ],
-    name: 'placeSellOrder',
-    outputs: [],
+    name: 'place',
+    outputs: [{ name: 'orderId', type: 'uint256' }],
     stateMutability: 'nonpayable',
     type: 'function',
   },
@@ -115,7 +105,6 @@ export default function useLiquidity() {
       console.log('Approval successful, placing order...')
       refetchAllowance()
       
-      // Wait a bit for allowance to update
       setTimeout(() => {
         executePlaceOrder(pendingParams)
       }, 1000)
@@ -145,25 +134,44 @@ export default function useLiquidity() {
     }
   }, [orderError])
 
+  // Convert price to tick
+  // Tick 0 means price = 1.0 (at parity)
+  // For simplicity, we'll use tick 0 for now
+  // In production, calculate tick based on desired price
+  const priceToTick = (price: number): number => {
+    // Simplified: tick 0 = price 1.0
+    // Positive ticks = higher price
+    // Negative ticks = lower price
+    // Each tick represents ~0.01% price change
+    const priceDelta = price - 1.0
+    const tick = Math.round(priceDelta * 10000) // 0.0001 per tick
+    return tick
+  }
+
   const executePlaceOrder = async (params: AddLiquidityParams) => {
     try {
-      // Convert price to uint128 (6 decimals for testnet)
-      const priceScaled = BigInt(Math.floor(params.price * 1e6))
-
-      const functionName = params.orderType === 'buy' ? 'placeBuyOrder' : 'placeSellOrder'
+      const tick = priceToTick(params.price)
+      const orderTypeInt = params.orderType === 'buy' ? 0 : 1
 
       console.log('Placing order:', {
-        function: functionName,
         token: params.token,
         amount: params.amount.toString(),
-        price: priceScaled.toString()
+        orderType: params.orderType,
+        orderTypeInt,
+        price: params.price,
+        tick
       })
 
       placeOrder({
         address: DEX_CONTRACT as `0x${string}`,
         abi: dexAbi,
-        functionName,
-        args: [params.token as `0x${string}`, params.amount, priceScaled],
+        functionName: 'place',
+        args: [
+          params.token as `0x${string}`, 
+          params.amount, 
+          orderTypeInt,
+          tick
+        ],
       })
     } catch (err: any) {
       console.error('Place order error:', err)
