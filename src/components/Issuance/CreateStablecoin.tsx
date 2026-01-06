@@ -50,14 +50,20 @@ export default function CreateStablecoin() {
     }
 
     try {
-      // Convert currency to bytes3
-      const currencyBytes = '0x' + Buffer.from(currency).toString('hex').padEnd(6, '0')
+      // Convert currency string to bytes3 (hex format)
+      // "USD" -> "0x555344" (padded to 6 hex chars = 3 bytes)
+      const encoder = new TextEncoder()
+      const currencyBytes = encoder.encode(currency)
+      const hexString = '0x' + Array.from(currencyBytes)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+        .padEnd(6, '0')
       
       writeContract({
         address: TOKEN_FACTORY as `0x${string}`,
         abi: tokenFactoryAbi,
         functionName: 'createToken',
-        args: [name, symbol, currencyBytes as `0x${string}`],
+        args: [name, symbol, hexString as `0x${string}`],
       })
     } catch (err: any) {
       console.error('Create token error:', err)
