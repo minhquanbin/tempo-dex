@@ -9,17 +9,17 @@ interface AddLiquidityParams {
   orderType: 'buy' | 'sell'
 }
 
-// Tempo DEX ABI - Uses place() function with tick parameter
+// Tempo DEX ABI - Correct according to official docs
 const dexAbi = [
   {
     inputs: [
       { name: 'token', type: 'address' },
       { name: 'amount', type: 'uint128' },
-      { name: 'orderType', type: 'uint8' }, // 0 = buy, 1 = sell
-      { name: 'tick', type: 'int24' },
+      { name: 'isBid', type: 'bool' },
+      { name: 'tick', type: 'int16' },
     ],
     name: 'place',
-    outputs: [{ name: 'orderId', type: 'uint256' }],
+    outputs: [{ name: 'orderId', type: 'uint128' }],
     stateMutability: 'nonpayable',
     type: 'function',
   },
@@ -134,30 +134,29 @@ export default function useLiquidity() {
     }
   }, [orderError])
 
-  // Convert price to tick
-  // Tick 0 means price = 1.0 (at parity)
-  // For simplicity, we'll use tick 0 for now
-  // In production, calculate tick based on desired price
+  // Convert price to tick according to Tempo docs
+  // tick = (price - 1) * 100_000
+  // Limited to ±2000 ticks (±2% from peg)
   const priceToTick = (price: number): number => {
-    // Simplified: tick 0 = price 1.0
-    // Positive ticks = higher price
-    // Negative ticks = lower price
-    // Each tick represents ~0.01% price change
-    const priceDelta = price - 1.0
-    const tick = Math.round(priceDelta * 10000) // 0.0001 per tick
+    const tick = Math.round((price - 1) * 100000)
+    
+    // Clamp to ±2000 range
+    if (tick > 2000) return 2000
+    if (tick < -2000) return -2000
+    
     return tick
   }
 
   const executePlaceOrder = async (params: AddLiquidityParams) => {
     try {
       const tick = priceToTick(params.price)
-      const orderTypeInt = params.orderType === 'buy' ? 0 : 1
+      const isBid = params.orderType === 'buy'
 
       console.log('Placing order:', {
         token: params.token,
         amount: params.amount.toString(),
+        isBid,
         orderType: params.orderType,
-        orderTypeInt,
         price: params.price,
         tick
       })
@@ -169,7 +168,7 @@ export default function useLiquidity() {
         args: [
           params.token as `0x${string}`, 
           params.amount, 
-          orderTypeInt,
+          isBid,
           tick
         ],
       })
@@ -191,6 +190,8 @@ export default function useLiquidity() {
       resetOrder()
 
       // Determine which token needs approval
+      // For buy orders: approve pathUSD (quote token)
+      // For sell orders: approve the token itself
       const tokenForApproval = params.orderType === 'buy' ? TOKENS.pathUSD : params.token
       setTokenToApprove(tokenForApproval)
 
