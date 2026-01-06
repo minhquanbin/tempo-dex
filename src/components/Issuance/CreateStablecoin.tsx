@@ -16,8 +16,8 @@ const tokenFactoryAbi = [
   },
 ] as const
 
-// Token Factory Address on Tempo Testnet
-const TOKEN_FACTORY = '0x20c0000000000000000000000000000000000004'
+// Token Factory Address on Tempo Testnet (correct!)
+const TOKEN_FACTORY = '0x20fc000000000000000000000000000000000000'
 
 export default function CreateStablecoin() {
   const { address } = useAccount()
