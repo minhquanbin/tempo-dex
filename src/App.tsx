@@ -6,11 +6,12 @@ import ConnectWallet from './components/Wallet/ConnectWallet'
 import SwapInterface from './components/Swap/SwapInterface'
 import AddLiquidity from './components/Liquidity/AddLiquidity'
 import PaymentInterface from './components/Payment/PaymentInterface'
+import IssuanceInterface from './components/Issuance/IssuanceInterface'
 
 const queryClient = new QueryClient()
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'swap' | 'liquidity' | 'payment'>('swap')
+  const [activeTab, setActiveTab] = useState<'swap' | 'liquidity' | 'payment' | 'issuance'>('swap')
 
   return (
     <WagmiProvider config={config}>
@@ -38,7 +39,7 @@ function App() {
           <main className="max-w-2xl mx-auto px-4 py-8">
             {/* Tab Selector */}
             <div className="bg-white rounded-2xl shadow-lg p-2 mb-6">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 <button
                   onClick={() => setActiveTab('swap')}
                   className={`py-3 px-4 rounded-xl font-semibold transition-all ${
@@ -69,6 +70,16 @@ function App() {
                 >
                   💸 Payment
                 </button>
+                <button
+                  onClick={() => setActiveTab('issuance')}
+                  className={`py-3 px-4 rounded-xl font-semibold transition-all ${
+                    activeTab === 'issuance'
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  🪙 Issuance
+                </button>
               </div>
             </div>
 
@@ -77,6 +88,7 @@ function App() {
               {activeTab === 'swap' && <SwapInterface />}
               {activeTab === 'liquidity' && <AddLiquidity />}
               {activeTab === 'payment' && <PaymentInterface />}
+              {activeTab === 'issuance' && <IssuanceInterface />}
             </div>
 
             {/* Footer Info */}
