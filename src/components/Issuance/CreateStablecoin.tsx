@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { TOKENS } from '../../constants/tokens'
 
 // TIP-20 Token Factory ABI
 const tokenFactoryAbi = [
