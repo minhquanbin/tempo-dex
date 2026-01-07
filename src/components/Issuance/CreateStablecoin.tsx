@@ -1,12 +1,45 @@
-import { useState } from 'react'
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+{/* Currency Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Currency (ISO 4217)
+              </label>
+              <input
+                type="text"
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+                placeholder="USD"
+                maxLength={3}
+                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">3-letter currency code (e.g., USD, EUR, GBP)</p>
+            </div>
 
-// TIP-20 Token Factory ABI (CORRECT - only name and symbol!)
+            {/* Quote Token Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Quote Token
+              </label>
+              <select
+                value={quoteToken}
+                onChange={(e) => setQuoteToken(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all"
+              >
+                <option value="0x20c0000000000000000000000000000000000000">pathUSD (Default)</option>
+                <option value={TOKENS.AlphaUSD}>AlphaUSD</option>
+                <option value={TOKENS.BetaUSD}>BetaUSD</option>
+                <option value={TOKENS.ThetaUSD}>ThetaUSD</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Token used for price quotes</p>
+            </div>// TIP-20 Token Factory ABI (CORRECT - with all parameters!)
 const tokenFactoryAbi = [
   {
     inputs: [
       { name: 'name', type: 'string' },
       { name: 'symbol', type: 'string' },
+      { name: 'currency', type: 'string' },
+      { name: 'quoteToken', type: 'address' },
+      { name: 'admin', type: 'address' },
     ],
     name: 'createToken',
     outputs: [{ name: 'token', type: 'address' }],
@@ -14,209 +47,3 @@ const tokenFactoryAbi = [
     type: 'function',
   },
 ] as const
-
-// Token Factory Address on Tempo Testnet (correct!)
-const TOKEN_FACTORY = '0x20fc000000000000000000000000000000000000'
-
-export default function CreateStablecoin() {
-  const { address } = useAccount()
-  const [name, setName] = useState('')
-  const [symbol, setSymbol] = useState('')
-  const [createdToken, setCreatedToken] = useState<string>('')
-
-  const { 
-    writeContract, 
-    data: hash,
-    isPending,
-    error: writeError,
-  } = useWriteContract()
-
-  const { 
-    isLoading: isConfirming,
-    isSuccess,
-    data: receipt
-  } = useWaitForTransactionReceipt({
-    hash,
-  })
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!name || !symbol) {
-      alert('Please fill all fields')
-      return
-    }
-
-    try {
-      writeContract({
-        address: TOKEN_FACTORY as `0x${string}`,
-        abi: tokenFactoryAbi,
-        functionName: 'createToken',
-        args: [name, symbol],
-      })
-    } catch (err: any) {
-      console.error('Create token error:', err)
-    }
-  }
-
-  // Extract created token address from receipt logs
-  if (isSuccess && receipt && !createdToken) {
-    // Parse logs to get token address
-    const tokenCreatedLog = receipt.logs[0]
-    if (tokenCreatedLog) {
-      // Token address is typically in the first log
-      setCreatedToken(tokenCreatedLog.address)
-    }
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-5 border-2 border-yellow-200">
-        <h3 className="font-bold text-yellow-800 text-lg mb-2">🪙 Create Your Stablecoin</h3>
-        <p className="text-sm text-yellow-700">
-          Deploy a new TIP-20 compliant stablecoin on Tempo Network with built-in compliance features.
-        </p>
-      </div>
-
-      {!createdToken ? (
-        <form onSubmit={handleCreate} className="space-y-4">
-          {/* Token Name */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-600 mb-2">
-              Token Name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Demo USD"
-              required
-              className="w-full bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-2xl px-5 py-4 text-lg font-semibold focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 transition-all"
-            />
-          </div>
-
-          {/* Token Symbol */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-600 mb-2">
-              Token Symbol
-            </label>
-            <input
-              type="text"
-              value={symbol}
-              onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-              placeholder="e.g., DEMO"
-              required
-              maxLength={10}
-              className="w-full bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl px-5 py-4 text-lg font-semibold focus:outline-none focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all"
-            />
-          </div>
-
-          {/* Currency */}
-          <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-4 border-2 border-yellow-200">
-            <p className="text-sm text-yellow-700">
-              ℹ️ <strong>Note:</strong> Currency (USD, EUR, etc.) can be set after token creation using the <code className="bg-yellow-100 px-2 py-1 rounded">setCurrency</code> function.
-            </p>
-          </div>
-
-          {/* Error Display */}
-          {writeError && (
-            <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4">
-              <p className="text-red-700 text-sm font-medium">
-                ❌ {writeError.message}
-              </p>
-            </div>
-          )}
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isPending || isConfirming || !address}
-            className={`w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-lg ${
-              isPending || isConfirming || !address
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-white hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]'
-            }`}
-          >
-            {isPending ? '⏳ Creating...' : isConfirming ? '⏳ Confirming...' : '🪙 Create Stablecoin'}
-          </button>
-        </form>
-      ) : (
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-6">
-          <div className="text-center mb-4">
-            <div className="text-5xl mb-3">🎉</div>
-            <h3 className="text-2xl font-bold text-green-800 mb-2">
-              {name} Created Successfully!
-            </h3>
-          </div>
-          
-          <div className="space-y-3 bg-white rounded-xl p-4">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Token Name:</span>
-              <span className="font-bold text-gray-800">{name}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Symbol:</span>
-              <span className="font-bold text-gray-800">{symbol}</span>
-            </div>
-            <div className="border-t pt-3">
-              <span className="text-sm text-gray-600 block mb-2">Contract Address:</span>
-              <code className="block bg-gray-100 p-3 rounded-lg text-xs font-mono break-all text-gray-800">
-                {createdToken}
-              </code>
-            </div>
-          </div>
-
-          {receipt && (
-            <a
-              href={`https://testnet.temposcan.io/tx/${receipt.transactionHash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 block text-center text-green-700 hover:text-green-800 font-medium text-sm underline"
-            >
-              📝 View on Explorer
-            </a>
-          )}
-
-          <button
-            onClick={() => {
-              setCreatedToken('')
-              setName('')
-              setSymbol('')
-            }}
-            className="mt-4 w-full py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-all"
-          >
-            Create Another Token
-          </button>
-        </div>
-      )}
-
-      {/* Info Box */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-5">
-        <div className="flex gap-3">
-          <div className="text-2xl">💡</div>
-          <div className="text-sm text-gray-700">
-            <p className="font-bold mb-2 text-blue-800">About TIP-20 Tokens:</p>
-            <ul className="space-y-1.5 text-xs">
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600">•</span>
-                <span>Built-in compliance and role-based access control</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600">•</span>
-                <span>Can be used to pay transaction fees</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600">•</span>
-                <span>Fully compatible with ERC-20 standard</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600">•</span>
-                <span>You become the admin with full control</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
