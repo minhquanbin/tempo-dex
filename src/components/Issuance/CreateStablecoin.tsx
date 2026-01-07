@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 
-// TIP-20 Token Factory ABI
+// TIP-20 Token Factory ABI (CORRECT - only name and symbol!)
 const tokenFactoryAbi = [
   {
     inputs: [
       { name: 'name', type: 'string' },
       { name: 'symbol', type: 'string' },
-      { name: 'currency', type: 'bytes3' },
     ],
     name: 'createToken',
     outputs: [{ name: 'token', type: 'address' }],
@@ -23,7 +22,6 @@ export default function CreateStablecoin() {
   const { address } = useAccount()
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
-  const [currency, setCurrency] = useState('USD')
   const [createdToken, setCreatedToken] = useState<string>('')
 
   const { 
@@ -44,26 +42,17 @@ export default function CreateStablecoin() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!name || !symbol || !currency) {
+    if (!name || !symbol) {
       alert('Please fill all fields')
       return
     }
 
     try {
-      // Convert currency string to bytes3 (hex format)
-      // "USD" -> "0x555344" (padded to 6 hex chars = 3 bytes)
-      const encoder = new TextEncoder()
-      const currencyBytes = encoder.encode(currency)
-      const hexString = '0x' + Array.from(currencyBytes)
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('')
-        .padEnd(6, '0')
-      
       writeContract({
         address: TOKEN_FACTORY as `0x${string}`,
         abi: tokenFactoryAbi,
         functionName: 'createToken',
-        args: [name, symbol, hexString as `0x${string}`],
+        args: [name, symbol],
       })
     } catch (err: any) {
       console.error('Create token error:', err)
@@ -123,20 +112,10 @@ export default function CreateStablecoin() {
           </div>
 
           {/* Currency */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-600 mb-2">
-              Underlying Currency
-            </label>
-            <select
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-              className="w-full bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl px-5 py-4 text-lg font-semibold focus:outline-none focus:border-green-400 focus:ring-4 focus:ring-green-100 transition-all"
-            >
-              <option value="USD">USD - US Dollar</option>
-              <option value="EUR">EUR - Euro</option>
-              <option value="GBP">GBP - British Pound</option>
-              <option value="JPY">JPY - Japanese Yen</option>
-            </select>
+          <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-4 border-2 border-yellow-200">
+            <p className="text-sm text-yellow-700">
+              ℹ️ <strong>Note:</strong> Currency (USD, EUR, etc.) can be set after token creation using the <code className="bg-yellow-100 px-2 py-1 rounded">setCurrency</code> function.
+            </p>
           </div>
 
           {/* Error Display */}
@@ -178,10 +157,6 @@ export default function CreateStablecoin() {
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Symbol:</span>
               <span className="font-bold text-gray-800">{symbol}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Currency:</span>
-              <span className="font-bold text-gray-800">{currency}</span>
             </div>
             <div className="border-t pt-3">
               <span className="text-sm text-gray-600 block mb-2">Contract Address:</span>
