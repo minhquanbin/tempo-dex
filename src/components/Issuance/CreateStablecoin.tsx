@@ -223,7 +223,7 @@ export default function CreateStablecoin() {
 
           {receipt && (
             <a
-              href={`https://testnet.temposcan.io/tx/${receipt.transactionHash}`}
+              href={`https://explore.tempo.xyz/tx/${receipt.transactionHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-4 block text-center text-green-700 hover:text-green-800 font-medium text-sm underline"
