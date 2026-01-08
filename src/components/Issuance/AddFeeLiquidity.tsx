@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { TOKENS } from '../../constants/tokens'
+import TokenSelectorForIssuance from './TokenSelectorForIssuance'
 
 // FeeManager Precompiled Contract
 const FEE_MANAGER = '0xfeec000000000000000000000000000000000000'
@@ -192,22 +193,16 @@ export default function AddFeeLiquidity({ prefilledToken }: AddFeeLiquidityProps
         </div>
       ) : (
         <div className="space-y-4">
-          {/* User Token Input */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-600 mb-2">
-              Your Token (User Token)
-            </label>
-            <input
-              type="text"
-              value={userToken}
-              onChange={(e) => setUserToken(e.target.value)}
-              placeholder="0x..."
-              className="w-full bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl px-5 py-4 text-sm font-mono focus:outline-none focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all"
-            />
-            {prefilledToken && (
-              <p className="text-xs text-gray-500 mt-2">✅ Token address auto-filled from creation</p>
-            )}
-          </div>
+          {/* User Token - Now with Selector */}
+          <TokenSelectorForIssuance
+            value={userToken}
+            onChange={setUserToken}
+            label="Your Token (User Token)"
+            placeholder="0x..."
+          />
+          {prefilledToken && userToken === prefilledToken && (
+            <p className="text-xs text-gray-500 -mt-2">✅ Token address auto-filled from creation</p>
+          )}
 
           {/* Validator Token Selection */}
           <div>

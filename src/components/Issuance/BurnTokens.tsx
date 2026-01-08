@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseUnits } from 'viem'
+import TokenSelectorForIssuance from './TokenSelectorForIssuance'
 
 // TIP-20 Token ABI for burning
 const tokenAbi = [
