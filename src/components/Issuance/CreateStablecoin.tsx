@@ -35,14 +35,14 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
   const [quoteToken, setQuoteToken] = useState('0x20c0000000000000000000000000000000000000') // pathUSD default
   const [createdToken, setCreatedToken] = useState<string>('')
 
-  const { 
-    writeContract, 
+  const {
+    writeContract,
     data: hash,
     isPending,
     error: writeError,
   } = useWriteContract()
 
-  const { 
+  const {
     isLoading: isConfirming,
     isSuccess,
     data: receipt
@@ -52,7 +52,7 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!name || !symbol || !currency || !address) {
       alert('Please fill all fields and connect wallet')
       return
@@ -84,12 +84,14 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
       // Token address is typically in the first log
       const tokenAddr = tokenCreatedLog.address
       setCreatedToken(tokenAddr)
-      
-      // Save token to storage
-      saveCreatedToken(tokenAddr, name, symbol).catch(err => {
-        console.error('Failed to save token:', err)
+
+      // Save token to storage (synchronous, no catch needed)
+      saveCreatedToken({
+        address: tokenAddr,
+        name,
+        symbol
       })
-      
+
       // Callback to parent
       if (onTokenCreated) {
         onTokenCreated(tokenAddr)
@@ -177,7 +179,7 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
           {/* Admin Info */}
           <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 border-2 border-indigo-200">
             <p className="text-sm text-indigo-700 mb-2">
-              🔐 <strong>Admin Address:</strong>
+              🔑 <strong>Admin Address:</strong>
             </p>
             <code className="block bg-white px-3 py-2 rounded text-xs font-mono break-all text-gray-800">
               {address || 'Connect wallet first'}
@@ -189,7 +191,7 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
           {writeError && (
             <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4">
               <p className="text-red-700 text-sm font-medium">
-                ❌ {writeError.message}
+                ⚠️ {writeError.message}
               </p>
             </div>
           )}
@@ -215,7 +217,7 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
               {name} Created Successfully!
             </h3>
           </div>
-          
+
           <div className="space-y-3 bg-white rounded-xl p-4">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Token Name:</span>
@@ -244,7 +246,7 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
               rel="noopener noreferrer"
               className="mt-4 block text-center text-green-700 hover:text-green-800 font-medium text-sm underline"
             >
-              📝 View on Explorer
+              🔗 View on Explorer
             </a>
           )}
 

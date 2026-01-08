@@ -12,7 +12,6 @@ interface TokenSelectorForIssuanceProps {
   value: string
   onChange: (address: string) => void
   label?: string
-  placeholder?: string
 }
 
 const STORAGE_KEY = 'tempo-dex-created-tokens'
@@ -61,8 +60,7 @@ const deleteToken = (address: string) => {
 export default function TokenSelectorForIssuance({ 
   value, 
   onChange, 
-  label = "Token Contract Address",
-  placeholder = "Select a token or enter address"
+  label = "Token Contract Address"
 }: TokenSelectorForIssuanceProps) {
   const [savedTokens, setSavedTokens] = useState<SavedToken[]>([])
   const [useCustom, setUseCustom] = useState(false)
