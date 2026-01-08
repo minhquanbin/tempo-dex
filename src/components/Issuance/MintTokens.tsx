@@ -102,7 +102,6 @@ export default function MintTokens() {
           value={tokenAddress}
           onChange={setTokenAddress}
           label="Token Contract Address"
-          placeholder="Select a token or enter address"
         />
 
         {/* Recipient */}

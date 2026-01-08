@@ -93,7 +93,6 @@ export default function BurnTokens() {
           value={tokenAddress}
           onChange={setTokenAddress}
           label="Token Contract Address"
-          placeholder="Select a token or enter address"
         />
 
         {/* Amount */}

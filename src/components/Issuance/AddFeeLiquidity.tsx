@@ -198,7 +198,6 @@ export default function AddFeeLiquidity({ prefilledToken }: AddFeeLiquidityProps
             value={userToken}
             onChange={setUserToken}
             label="Your Token (User Token)"
-            placeholder="0x..."
           />
           {prefilledToken && userToken === prefilledToken && (
             <p className="text-xs text-gray-500 -mt-2">✅ Token address auto-filled from creation</p>
