@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { TOKENS } from '../../constants/tokens'
+import { saveCreatedToken } from './TokenSelectorForIssuance'
 
 // TIP-20 Token Factory ABI (CORRECT - 5 parameters from actual transaction!)
 const tokenFactoryAbi = [
@@ -83,6 +84,11 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
       // Token address is typically in the first log
       const tokenAddr = tokenCreatedLog.address
       setCreatedToken(tokenAddr)
+      
+      // Save token to storage
+      saveCreatedToken(tokenAddr, name, symbol).catch(err => {
+        console.error('Failed to save token:', err)
+      })
       
       // Callback to parent
       if (onTokenCreated) {
