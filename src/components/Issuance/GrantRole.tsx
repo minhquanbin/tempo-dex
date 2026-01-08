@@ -127,7 +127,6 @@ export default function GrantRole() {
             value={tokenAddress}
             onChange={setTokenAddress}
             label="Token Contract Address"
-            placeholder="0x..."
           />
 
           {/* Role Selection */}
