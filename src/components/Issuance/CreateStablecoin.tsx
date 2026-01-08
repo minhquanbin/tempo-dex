@@ -78,15 +78,18 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
 
   // Extract created token address from receipt logs
   if (isSuccess && receipt && !createdToken) {
-    // Parse logs to get token address
-    // Token address is in topics[1] of the TokenCreated event
-    const tokenCreatedLog = receipt.logs.find(log => log.topics.length > 1)
+    // Find the TokenCreated event log from Factory
+    const tokenCreatedLog = receipt.logs.find(
+      log => log.address.toLowerCase() === TOKEN_FACTORY.toLowerCase() && log.topics.length >= 2
+    )
+    
     if (tokenCreatedLog && tokenCreatedLog.topics[1]) {
-      // Extract address from topics[1] (remove padding zeros)
+      // Token address is in topics[1], need to convert from bytes32 to address
+      // Remove '0x' prefix, take last 40 chars (20 bytes = address), add '0x' back
       const tokenAddr = `0x${tokenCreatedLog.topics[1].slice(-40)}` as `0x${string}`
       setCreatedToken(tokenAddr)
 
-      // Save token to storage (synchronous, no catch needed)
+      // Save token to storage
       saveCreatedToken({
         address: tokenAddr,
         name,
