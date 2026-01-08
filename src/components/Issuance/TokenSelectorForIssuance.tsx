@@ -15,56 +15,99 @@ interface TokenSelectorForIssuanceProps {
   placeholder?: string
 }
 
-export default function TokenSelectorForIssuance({
-  value,
-  onChange,
-  label = 'Token Contract Address',
-  placeholder = '0x...',
+const STORAGE_KEY = 'tempo-dex-created-tokens'
+
+// Helper functions for localStorage
+export const saveCreatedToken = (token: { address: string; name: string; symbol: string }) => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    const tokens: SavedToken[] = stored ? JSON.parse(stored) : []
+    
+    // Check if token already exists
+    const exists = tokens.some(t => t.address.toLowerCase() === token.address.toLowerCase())
+    if (!exists) {
+      tokens.push({
+        ...token,
+        createdAt: Date.now()
+      })
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tokens))
+    }
+  } catch (error) {
+    console.error('Error saving token:', error)
+  }
+}
+
+const loadSavedTokens = (): SavedToken[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    return stored ? JSON.parse(stored) : []
+  } catch (error) {
+    console.error('Error loading tokens:', error)
+    return []
+  }
+}
+
+const deleteToken = (address: string) => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    const tokens: SavedToken[] = stored ? JSON.parse(stored) : []
+    const filtered = tokens.filter(t => t.address.toLowerCase() !== address.toLowerCase())
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered))
+  } catch (error) {
+    console.error('Error deleting token:', error)
+  }
+}
+
+export default function TokenSelectorForIssuance({ 
+  value, 
+  onChange, 
+  label = "Token Contract Address",
+  placeholder = "Select a token or enter address"
 }: TokenSelectorForIssuanceProps) {
   const [savedTokens, setSavedTokens] = useState<SavedToken[]>([])
-  const [showCustomInput, setShowCustomInput] = useState(false)
+  const [useCustom, setUseCustom] = useState(false)
   const [customAddress, setCustomAddress] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
 
-  // Load saved tokens from storage
+  // Load saved tokens on mount
   useEffect(() => {
-    loadTokens()
+    const tokens = loadSavedTokens()
+    setSavedTokens(tokens)
+    
+    // If value exists but not in saved tokens, enable custom input
+    if (value && !tokens.some(t => t.address.toLowerCase() === value.toLowerCase())) {
+      setUseCustom(true)
+      setCustomAddress(value)
+    }
+  }, [value])
+
+  // Refresh tokens periodically (when new token created)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const tokens = loadSavedTokens()
+      setSavedTokens(tokens)
+    }, 2000)
+    
+    return () => clearInterval(interval)
   }, [])
 
-  const loadTokens = async () => {
-    try {
-      setIsLoading(true)
-      const result = await window.storage.get('created-tokens', false)
-      
-      if (result && result.value) {
-        const tokens = JSON.parse(result.value) as SavedToken[]
-        setSavedTokens(tokens)
-      }
-    } catch (error) {
-      console.error('Failed to load tokens:', error)
-    } finally {
-      setIsLoading(false)
+  const handleSelectToken = (address: string) => {
+    onChange(address)
+    setUseCustom(false)
+    setCustomAddress('')
+  }
+
+  const handleCustomAddressChange = (address: string) => {
+    setCustomAddress(address)
+    if (isAddress(address)) {
+      onChange(address)
     }
   }
 
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedValue = e.target.value
-    
-    if (selectedValue === 'custom') {
-      setShowCustomInput(true)
+  const handleDeleteToken = (address: string) => {
+    deleteToken(address)
+    setSavedTokens(prev => prev.filter(t => t.address.toLowerCase() !== address.toLowerCase()))
+    if (value.toLowerCase() === address.toLowerCase()) {
       onChange('')
-    } else {
-      setShowCustomInput(false)
-      onChange(selectedValue)
-    }
-  }
-
-  const handleCustomAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const addr = e.target.value
-    setCustomAddress(addr)
-    
-    if (isAddress(addr)) {
-      onChange(addr)
     }
   }
 
@@ -74,103 +117,84 @@ export default function TokenSelectorForIssuance({
         {label}
       </label>
 
-      {isLoading ? (
-        <div className="w-full bg-gray-100 rounded-2xl px-5 py-4 text-center text-gray-500">
-          Loading tokens...
+      {/* Saved Tokens List */}
+      {savedTokens.length > 0 && !useCustom && (
+        <div className="space-y-2 mb-3">
+          {savedTokens.map((token) => (
+            <div
+              key={token.address}
+              className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                value.toLowerCase() === token.address.toLowerCase()
+                  ? 'bg-purple-100 border-purple-400'
+                  : 'bg-white border-gray-200 hover:border-purple-300'
+              }`}
+              onClick={() => handleSelectToken(token.address)}
+            >
+              <div className="flex-1">
+                <div className="font-semibold text-gray-800">
+                  {token.name} ({token.symbol})
+                </div>
+                <div className="text-xs text-gray-500 font-mono">
+                  {token.address.slice(0, 10)}...{token.address.slice(-8)}
+                </div>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleDeleteToken(token.address)
+                }}
+                className="ml-2 px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Custom Address Input */}
+      {useCustom ? (
+        <div className="space-y-2">
+          <input
+            type="text"
+            value={customAddress}
+            onChange={(e) => handleCustomAddressChange(e.target.value)}
+            placeholder="0x..."
+            className="w-full bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl px-5 py-4 font-mono text-sm focus:outline-none focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all"
+          />
+          {savedTokens.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setUseCustom(false)
+                setCustomAddress('')
+              }}
+              className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+            >
+              ← Back to saved tokens
+            </button>
+          )}
         </div>
       ) : (
-        <>
-          {savedTokens.length > 0 ? (
-            <select
-              value={showCustomInput ? 'custom' : value}
-              onChange={handleSelectChange}
-              className="w-full bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl px-5 py-4 text-lg font-semibold focus:outline-none focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all"
-            >
-              <option value="">Select a token...</option>
-              {savedTokens.map((token) => (
-                <option key={token.address} value={token.address}>
-                  {token.name} ({token.symbol}) - {token.address.slice(0, 6)}...{token.address.slice(-4)}
-                </option>
-              ))}
-              <option value="custom">+ Use custom address</option>
-            </select>
+        <button
+          type="button"
+          onClick={() => setUseCustom(true)}
+          className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-600 hover:border-purple-400 hover:text-purple-600 transition-all"
+        >
+          + Use custom address
+        </button>
+      )}
+
+      {/* Validation Indicator */}
+      {value && (
+        <div className="mt-2 text-xs">
+          {isAddress(value) ? (
+            <span className="text-green-600">✓ Valid address</span>
           ) : (
-            <div className="space-y-3">
-              <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-3">
-                <p className="text-sm text-yellow-800">
-                  ⚠️ No tokens found. Create a token first or enter address manually.
-                </p>
-              </div>
-              <input
-                type="text"
-                value={customAddress}
-                onChange={handleCustomAddressChange}
-                placeholder={placeholder}
-                className="w-full bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl px-5 py-4 text-sm font-mono focus:outline-none focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all"
-              />
-            </div>
+            <span className="text-red-600">✗ Invalid address</span>
           )}
-
-          {showCustomInput && savedTokens.length > 0 && (
-            <div className="mt-3">
-              <input
-                type="text"
-                value={customAddress}
-                onChange={handleCustomAddressChange}
-                placeholder={placeholder}
-                className="w-full bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-2xl px-5 py-4 text-sm font-mono focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 transition-all"
-              />
-            </div>
-          )}
-
-          {value && isAddress(value) && (
-            <div className="mt-2 text-xs text-gray-500">
-              ✅ Valid address: {value.slice(0, 10)}...{value.slice(-8)}
-            </div>
-          )}
-        </>
+        </div>
       )}
     </div>
   )
-}
-
-// Helper function to save new token
-export async function saveCreatedToken(
-  address: string,
-  name: string,
-  symbol: string
-): Promise<void> {
-  try {
-    // Load existing tokens
-    const result = await window.storage.get('created-tokens', false)
-    let tokens: SavedToken[] = []
-    
-    if (result && result.value) {
-      tokens = JSON.parse(result.value)
-    }
-
-    // Check if token already exists
-    const exists = tokens.some(t => t.address.toLowerCase() === address.toLowerCase())
-    if (exists) {
-      console.log('Token already saved')
-      return
-    }
-
-    // Add new token
-    const newToken: SavedToken = {
-      address,
-      name,
-      symbol,
-      createdAt: Date.now(),
-    }
-
-    tokens.unshift(newToken) // Add to beginning
-
-    // Save back to storage
-    await window.storage.set('created-tokens', JSON.stringify(tokens), false)
-    
-    console.log('Token saved successfully:', newToken)
-  } catch (error) {
-    console.error('Failed to save token:', error)
-  }
 }

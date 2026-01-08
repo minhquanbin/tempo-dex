@@ -31,14 +31,14 @@ export default function MintTokens() {
   const [amount, setAmount] = useState('')
   const [decimals] = useState(6) // Default to 6 for TIP-20 testnet tokens
 
-  const { 
-    writeContract, 
+  const {
+    writeContract,
     data: hash,
     isPending,
     error: writeError,
   } = useWriteContract()
 
-  const { 
+  const {
     isLoading: isConfirming,
     isSuccess
   } = useWaitForTransactionReceipt({
@@ -47,7 +47,7 @@ export default function MintTokens() {
 
   const handleMint = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!tokenAddress || !recipient || !amount) {
       alert('Please fill all fields')
       return
@@ -55,7 +55,7 @@ export default function MintTokens() {
 
     try {
       const amountInSmallestUnit = parseUnits(amount, decimals)
-      
+
       writeContract({
         address: tokenAddress as `0x${string}`,
         abi: tokenAbi,
@@ -90,27 +90,20 @@ export default function MintTokens() {
   return (
     <div className="space-y-4">
       <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5 border-2 border-green-200">
-        <h3 className="font-bold text-green-800 text-lg mb-2">➕ Mint New Tokens</h3>
+        <h3 className="font-bold text-green-800 text-lg mb-2">🪙 Mint New Tokens</h3>
         <p className="text-sm text-green-700">
           Create new tokens and send them to any address. Requires ISSUER_ROLE.
         </p>
       </div>
 
       <form onSubmit={handleMint} className="space-y-4">
-        {/* Token Address */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-600 mb-2">
-            Token Contract Address
-          </label>
-          <input
-            type="text"
-            value={tokenAddress}
-            onChange={(e) => setTokenAddress(e.target.value)}
-            placeholder="0x..."
-            required
-            className="w-full bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl px-5 py-4 font-mono text-sm focus:outline-none focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all"
-          />
-        </div>
+        {/* Token Selector - REPLACED INPUT */}
+        <TokenSelectorForIssuance
+          value={tokenAddress}
+          onChange={setTokenAddress}
+          label="Token Contract Address"
+          placeholder="Select a token or enter address"
+        />
 
         {/* Recipient */}
         <div>
@@ -155,7 +148,7 @@ export default function MintTokens() {
         {writeError && (
           <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4">
             <p className="text-red-700 text-sm font-medium">
-              ❌ {writeError.message}
+              ⚠️ {writeError.message}
             </p>
           </div>
         )}
@@ -170,14 +163,14 @@ export default function MintTokens() {
               : 'bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]'
           }`}
         >
-          {isPending ? '⏳ Minting...' : isConfirming ? '⏳ Confirming...' : '➕ Mint Tokens'}
+          {isPending ? '⏳ Minting...' : isConfirming ? '⏳ Confirming...' : '🪙 Mint Tokens'}
         </button>
       </form>
 
       {/* Info Box */}
       <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl p-5">
         <div className="flex gap-3">
-          <div className="text-2xl">⚠️</div>
+          <div className="text-2xl">ℹ️</div>
           <div className="text-sm text-gray-700">
             <p className="font-bold mb-2 text-yellow-800">Important Notes:</p>
             <ul className="space-y-1.5 text-xs">

@@ -22,14 +22,14 @@ export default function BurnTokens() {
   const [amount, setAmount] = useState('')
   const [decimals] = useState(6) // Default to 6 for TIP-20 testnet tokens
 
-  const { 
-    writeContract, 
+  const {
+    writeContract,
     data: hash,
     isPending,
     error: writeError,
   } = useWriteContract()
 
-  const { 
+  const {
     isLoading: isConfirming,
     isSuccess
   } = useWaitForTransactionReceipt({
@@ -38,7 +38,7 @@ export default function BurnTokens() {
 
   const handleBurn = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!tokenAddress || !amount) {
       alert('Please fill all fields')
       return
@@ -46,7 +46,7 @@ export default function BurnTokens() {
 
     try {
       const amountInSmallestUnit = parseUnits(amount, decimals)
-      
+
       writeContract({
         address: tokenAddress as `0x${string}`,
         abi: tokenAbi,
@@ -88,20 +88,13 @@ export default function BurnTokens() {
       </div>
 
       <form onSubmit={handleBurn} className="space-y-4">
-        {/* Token Address */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-600 mb-2">
-            Token Contract Address
-          </label>
-          <input
-            type="text"
-            value={tokenAddress}
-            onChange={(e) => setTokenAddress(e.target.value)}
-            placeholder="0x..."
-            required
-            className="w-full bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl px-5 py-4 font-mono text-sm focus:outline-none focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all"
-          />
-        </div>
+        {/* Token Selector - REPLACED INPUT */}
+        <TokenSelectorForIssuance
+          value={tokenAddress}
+          onChange={setTokenAddress}
+          label="Token Contract Address"
+          placeholder="Select a token or enter address"
+        />
 
         {/* Amount */}
         <div>
@@ -135,7 +128,7 @@ export default function BurnTokens() {
         {writeError && (
           <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4">
             <p className="text-red-700 text-sm font-medium">
-              ❌ {writeError.message}
+              ⚠️ {writeError.message}
             </p>
           </div>
         )}
