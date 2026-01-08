@@ -62,7 +62,7 @@ interface AddFeeLiquidityProps {
 export default function AddFeeLiquidity({ prefilledToken }: AddFeeLiquidityProps) {
   const { address } = useAccount()
   const [userToken, setUserToken] = useState(prefilledToken || '')
-  const [validatorToken, setValidatorToken] = useState(TOKENS.AlphaUSD)
+  const [validatorToken, setValidatorToken] = useState<string>(TOKENS.AlphaUSD)
   const [amount, setAmount] = useState('')
 
   // Read pool info
