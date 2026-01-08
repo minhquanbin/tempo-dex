@@ -1,64 +1,110 @@
 import { useState } from 'react'
-import { useAccount } from 'wagmi'
 import CreateStablecoin from './CreateStablecoin'
 import MintTokens from './MintTokens'
 import BurnTokens from './BurnTokens'
 import GrantRole from './GrantRole'
+import AddFeeLiquidity from './AddFeeLiquidity'
 
-type IssuanceTab = 'create' | 'grant' | 'mint' | 'burn'
+type IssuanceTab = 'create' | 'grant' | 'mint' | 'burn' | 'feepool'
 
 export default function IssuanceInterface() {
-  const { isConnected } = useAccount()
   const [activeTab, setActiveTab] = useState<IssuanceTab>('create')
+  const [createdTokenAddress, setCreatedTokenAddress] = useState<string>('')
 
-  const tabs = [
-    { id: 'create' as IssuanceTab, name: 'Create Token', icon: '🪙' },
-    { id: 'grant' as IssuanceTab, name: 'Grant Role', icon: '👤' },
-    { id: 'mint' as IssuanceTab, name: 'Mint', icon: '➕' },
-    { id: 'burn' as IssuanceTab, name: 'Burn', icon: '🔥' },
-  ]
+  // Callback when token is created successfully
+  const handleTokenCreated = (tokenAddress: string) => {
+    setCreatedTokenAddress(tokenAddress)
+  }
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-8 border border-purple-100">
-      {!isConnected ? (
-        <div className="text-center py-20 px-4">
-          <div className="bg-gradient-to-br from-yellow-100 to-orange-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-            <div className="text-5xl">🪙</div>
-          </div>
-          <h3 className="text-2xl font-bold text-gray-800 mb-3">Issue Stablecoins</h3>
-          <p className="text-gray-500 mb-6">Connect your wallet to create and manage stablecoins</p>
-          <div className="inline-block px-6 py-2 bg-yellow-50 text-yellow-700 rounded-full text-sm font-medium">
-            Connect wallet above ↗️
-          </div>
+    <div className="space-y-6">
+      {/* Tabs */}
+      <div className="bg-white rounded-2xl shadow-lg p-2">
+        <div className="grid grid-cols-5 gap-2">
+          <button
+            onClick={() => setActiveTab('create')}
+            className={`py-3 px-4 rounded-xl font-semibold transition-all text-sm ${
+              activeTab === 'create'
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            🪙 Create
+          </button>
+          <button
+            onClick={() => setActiveTab('grant')}
+            className={`py-3 px-4 rounded-xl font-semibold transition-all text-sm ${
+              activeTab === 'grant'
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            👤 Grant
+          </button>
+          <button
+            onClick={() => setActiveTab('mint')}
+            className={`py-3 px-4 rounded-xl font-semibold transition-all text-sm ${
+              activeTab === 'mint'
+                ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            ➕ Mint
+          </button>
+          <button
+            onClick={() => setActiveTab('burn')}
+            className={`py-3 px-4 rounded-xl font-semibold transition-all text-sm ${
+              activeTab === 'burn'
+                ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            🔥 Burn
+          </button>
+          <button
+            onClick={() => setActiveTab('feepool')}
+            className={`py-3 px-4 rounded-xl font-semibold transition-all text-sm ${
+              activeTab === 'feepool'
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            💧 Fee Pool
+          </button>
         </div>
-      ) : (
-        <div>
-          {/* Sub Tabs */}
-          <div className="mb-6">
-            <div className="grid grid-cols-4 gap-2 bg-gray-50 rounded-xl p-2">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`py-3 px-2 rounded-lg font-semibold text-sm transition-all ${
-                    activeTab === tab.id
-                      ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-md'
-                      : 'text-gray-600 hover:bg-white'
-                  }`}
-                >
-                  <div className="text-xl mb-1">{tab.icon}</div>
-                  <div>{tab.name}</div>
-                </button>
-              ))}
-            </div>
-          </div>
+      </div>
 
-          {/* Content */}
-          <div className="animate-fadeIn">
-            {activeTab === 'create' && <CreateStablecoin />}
-            {activeTab === 'grant' && <GrantRole />}
-            {activeTab === 'mint' && <MintTokens />}
-            {activeTab === 'burn' && <BurnTokens />}
+      {/* Content */}
+      <div className="animate-fadeIn">
+        {activeTab === 'create' && (
+          <CreateStablecoin onTokenCreated={handleTokenCreated} />
+        )}
+        {activeTab === 'grant' && <GrantRole />}
+        {activeTab === 'mint' && <MintTokens />}
+        {activeTab === 'burn' && <BurnTokens />}
+        {activeTab === 'feepool' && (
+          <AddFeeLiquidity prefilledToken={createdTokenAddress} />
+        )}
+      </div>
+
+      {/* Quick Actions */}
+      {createdTokenAddress && activeTab !== 'feepool' && (
+        <div className="bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-2xl p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-cyan-800 mb-1">
+                ⚡ Quick Action Available
+              </p>
+              <p className="text-xs text-cyan-700">
+                Add fee pool liquidity for your newly created token
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveTab('feepool')}
+              className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold rounded-xl hover:shadow-lg transition-all"
+            >
+              💧 Add Liquidity
+            </button>
           </div>
         </div>
       )}

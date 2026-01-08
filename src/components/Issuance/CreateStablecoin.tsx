@@ -22,7 +22,11 @@ const tokenFactoryAbi = [
 // Token Factory Address on Tempo Testnet (correct!)
 const TOKEN_FACTORY = '0x20fc000000000000000000000000000000000000'
 
-export default function CreateStablecoin() {
+interface CreateStablecoinProps {
+  onTokenCreated?: (tokenAddress: string) => void
+}
+
+export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinProps) {
   const { address } = useAccount()
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
@@ -77,7 +81,13 @@ export default function CreateStablecoin() {
     const tokenCreatedLog = receipt.logs[0]
     if (tokenCreatedLog) {
       // Token address is typically in the first log
-      setCreatedToken(tokenCreatedLog.address)
+      const tokenAddr = tokenCreatedLog.address
+      setCreatedToken(tokenAddr)
+      
+      // Callback to parent
+      if (onTokenCreated) {
+        onTokenCreated(tokenAddr)
+      }
     }
   }
 
@@ -223,7 +233,7 @@ export default function CreateStablecoin() {
 
           {receipt && (
             <a
-              href={`https://testnet.temposcan.io/tx/${receipt.transactionHash}`}
+              href={`https://explore.tempo.xyz/tx/${receipt.transactionHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-4 block text-center text-green-700 hover:text-green-800 font-medium text-sm underline"
