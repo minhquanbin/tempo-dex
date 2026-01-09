@@ -1,42 +1,33 @@
 import { http, createConfig } from 'wagmi'
 import { defineChain } from 'viem'
 
-// ============================================
-// TEMPO TESTNET - OFFICIAL CONFIG
-// Docs: https://docs.tempo.xyz/quickstart/connection-details
-// ============================================
-
+// Tempo Moderato Testnet (NEW - March 2025)
 export const tempoTestnet = defineChain({
-  id: 42429, // ✅ CORRECT Chain ID (confirmed in MetaMask)
-  name: 'Tempo Testnet (Andantino)',
+  id: 42431, // Updated: Moderato testnet
+  name: 'Tempo Moderato Testnet',
   nativeCurrency: {
-    name: 'USD',
-    symbol: 'USD',
+    name: 'Tempo',
+    symbol: 'TEMPO',
     decimals: 18,
   },
   rpcUrls: {
     default: {
-      http: ['https://rpc.testnet.tempo.xyz'],
-      webSocket: ['wss://rpc.testnet.tempo.xyz'],
+      http: ['https://rpc.moderato.tempo.xyz'], // Updated RPC
     },
     public: {
-      http: ['https://rpc.testnet.tempo.xyz'],
-      webSocket: ['wss://rpc.testnet.tempo.xyz'],
+      http: ['https://rpc.moderato.tempo.xyz'],
     },
   },
   blockExplorers: {
     default: {
       name: 'Tempo Explorer',
-      url: 'https://explore.tempo.xyz', // ✅ No "testnet" subdomain
+      url: 'https://explore.tempo.xyz', // Same explorer for both
     },
   },
   testnet: true,
 })
 
-// ============================================
-// WAGMI CONFIG
-// ============================================
-
+// Create Wagmi config
 export const config = createConfig({
   chains: [tempoTestnet],
   transports: {
