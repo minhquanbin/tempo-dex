@@ -18,10 +18,11 @@ interface UseBridgeProps {
   feeOption: CCIPFeeOption
 }
 
-// Chainlink CCIP Router ABI (simplified)
+// ✅ FIX: Thêm destinationChainSelector vào getFee
 const ccipRouterAbi = [
   {
     inputs: [
+      { name: 'destinationChainSelector', type: 'uint64' },
       {
         components: [
           { name: 'receiver', type: 'bytes' },
@@ -75,7 +76,6 @@ const ccipRouterAbi = [
   },
 ] as const
 
-// ERC20 ABI for approve and allowance
 const erc20Abi = [
   {
     inputs: [
@@ -117,7 +117,6 @@ export default function useBridge({
   const destinationSelector = CCIP_CHAIN_SELECTORS[destinationChainId as keyof typeof CCIP_CHAIN_SELECTORS]
   const linkAddress = LINK_TOKEN_ADDRESSES[sourceChainId as keyof typeof LINK_TOKEN_ADDRESSES]
 
-  // Validate inputs
   const isValidInput =
     amount > 0n &&
     !!address &&
@@ -129,14 +128,11 @@ export default function useBridge({
     isAddress(recipient) &&
     chainId === sourceChainId
 
-  // Build CCIP message
   const buildCCIPMessage = () => {
     if (!recipient || !isValidInput) return null
 
-    // Encode receiver address as bytes
     const receiverBytes = recipient as `0x${string}`
 
-    // Build token amounts array
     const tokenAmounts = [
       {
         token: tokenAddress as `0x${string}`,
@@ -144,12 +140,10 @@ export default function useBridge({
       },
     ]
 
-    // Fee token: address(0) for native, LINK address for LINK
     const feeToken = feeOption === CCIPFeeOption.NATIVE 
       ? '0x0000000000000000000000000000000000000000' as `0x${string}`
       : linkAddress as `0x${string}`
 
-    // Extra args for gas limit (encoded)
     const extraArgs = encodeFunctionData({
       abi: [{
         inputs: [{ name: 'gasLimit', type: 'uint256' }],
@@ -173,7 +167,7 @@ export default function useBridge({
 
   const ccipMessage = buildCCIPMessage()
 
-  // Get bridge fee estimate
+  // ✅ FIX: Thêm destinationSelector vào args
   const {
     data: estimatedFee,
     isLoading: isLoadingFee,
@@ -182,14 +176,33 @@ export default function useBridge({
     address: routerAddress as `0x${string}`,
     abi: ccipRouterAbi,
     functionName: 'getFee',
-    args: ccipMessage ? [ccipMessage] : undefined,
+    args: ccipMessage ? [BigInt(destinationSelector), ccipMessage] : undefined,
     query: {
-      enabled: isValidInput && !!ccipMessage,
+      enabled: isValidInput && !!ccipMessage && !!destinationSelector,
       retry: 2,
     },
   })
 
-  // Check token allowance for CCIP Router
+  // Debug logging
+  useEffect(() => {
+    if (isValidInput && ccipMessage) {
+      console.log('🔍 Bridge Config:', {
+        sourceChain: sourceChainId,
+        destinationChain: destinationChainId,
+        routerAddress,
+        destinationSelector,
+        tokenAddress,
+        amount: amount.toString(),
+      })
+    }
+    if (feeError) {
+      console.error('❌ Fee Error:', feeError)
+    }
+    if (estimatedFee) {
+      console.log('✅ Fee:', estimatedFee.toString())
+    }
+  }, [isValidInput, ccipMessage, feeError, estimatedFee, sourceChainId, destinationChainId, routerAddress, destinationSelector, tokenAddress, amount])
+
   const { data: currentAllowance, refetch: refetchAllowance } = useReadContract({
     address: tokenAddress as `0x${string}`,
     abi: erc20Abi,
@@ -202,7 +215,6 @@ export default function useBridge({
     },
   })
 
-  // Check if approval is needed
   useEffect(() => {
     if (currentAllowance !== undefined && amount > 0n) {
       setNeedsApproval(currentAllowance < amount)
@@ -211,7 +223,6 @@ export default function useBridge({
     }
   }, [currentAllowance, amount])
 
-  // Approve token for CCIP Router
   const {
     writeContract: approve,
     data: approveHash,
@@ -227,7 +238,6 @@ export default function useBridge({
     hash: approveHash,
   })
 
-  // Execute bridge
   const {
     writeContract: bridge,
     data: bridgeHash,
@@ -243,7 +253,6 @@ export default function useBridge({
     hash: bridgeHash,
   })
 
-  // Handle errors
   useEffect(() => {
     if (chainId !== sourceChainId) {
       setError(`Please switch to the source chain`)
@@ -258,14 +267,12 @@ export default function useBridge({
     }
   }, [chainId, sourceChainId, feeError, approveError, bridgeError])
 
-  // Refetch allowance after approval
   useEffect(() => {
     if (isApproveSuccess) {
       refetchAllowance()
     }
   }, [isApproveSuccess, refetchAllowance])
 
-  // Clear state on input change
   useEffect(() => {
     setError(null)
     setMessageId(null)
@@ -283,9 +290,8 @@ export default function useBridge({
       setError(null)
       setMessageId(null)
 
-      // Step 1: Approve if needed
       if (needsApproval) {
-        console.log('Approving token for CCIP Router...', {
+        console.log('Approving token...', {
           token: tokenAddress,
           router: routerAddress,
           amount: amount.toString(),
@@ -298,11 +304,10 @@ export default function useBridge({
           args: [routerAddress as `0x${string}`, amount],
         })
 
-        return // Wait for approval
+        return
       }
 
-      // Step 2: Execute bridge
-      console.log('🌉 Executing CCIP bridge...', {
+      console.log('🌉 Bridging...', {
         from: sourceChainId,
         to: destinationChainId,
         token: tokenAddress,
@@ -320,7 +325,7 @@ export default function useBridge({
       })
 
     } catch (err: any) {
-      console.error('Bridge execution error:', err)
+      console.error('Bridge error:', err)
       setError(err.shortMessage || err.message || 'Bridge failed')
     }
   }
