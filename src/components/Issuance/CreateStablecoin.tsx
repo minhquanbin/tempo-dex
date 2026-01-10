@@ -110,9 +110,11 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
       const tokenAddr = `0x${tokenCreatedLog.topics[1].slice(-40)}` as `0x${string}`
       setCreatedToken(tokenAddr)
 
-      // Save token to storage
-      saveCreatedToken(tokenAddr, name, symbol).catch((err: any) => {
-        console.error('Failed to save token:', err)
+      // ✅ FIXED: Save token to storage with correct signature
+      saveCreatedToken({
+        address: tokenAddr,
+        name,
+        symbol,
       })
 
       // Callback to parent
