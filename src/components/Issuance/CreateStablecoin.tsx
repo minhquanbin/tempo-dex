@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { TOKENS } from '../../constants/tokens'
 import { saveCreatedToken } from './TokenSelectorForIssuance'
+import { keccak256, toHex } from 'viem'
 
 // TIP-20 Token Factory ABI (CORRECT - 6 parameters with salt!)
 const tokenFactoryAbi = [
@@ -12,7 +13,7 @@ const tokenFactoryAbi = [
       { name: 'currency', type: 'string' },
       { name: 'quoteToken', type: 'address' },
       { name: 'admin', type: 'address' },
-      { name: 'salt', type: 'bytes32' }, // ✅ THÊM SALT
+      { name: 'salt', type: 'bytes32' },
     ],
     name: 'createToken',
     outputs: [{ name: 'token', type: 'address' }],
@@ -33,17 +34,17 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
   const [currency, setCurrency] = useState('USD')
-  const [quoteToken, setQuoteToken] = useState('0x20c0000000000000000000000000000000000000') // pathUSD default
+  const [quoteToken, setQuoteToken] = useState('0x20c0000000000000000000000000000000000000')
   const [createdToken, setCreatedToken] = useState<string>('')
 
-  const { 
-    writeContract, 
+  const {
+    writeContract,
     data: hash,
     isPending,
     error: writeError,
   } = useWriteContract()
 
-  const { 
+  const {
     isLoading: isConfirming,
     isSuccess,
     data: receipt
@@ -53,14 +54,30 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!name || !symbol || !currency || !address) {
       alert('Please fill all fields and connect wallet')
       return
     }
 
     try {
-      writeContract({
+      // Generate unique salt using keccak256
+      const timestamp = Date.now()
+      const random = Math.floor(Math.random() * 1000000)
+      const saltString = `${address}-${timestamp}-${random}`
+      const salt = keccak256(toHex(saltString))
+
+      console.log('Creating token with params:', {
+        name,
+        symbol,
+        currency,
+        quoteToken,
+        admin: address,
+        salt,
+        factory: TOKEN_FACTORY,
+      })
+
+      await writeContract({
         address: TOKEN_FACTORY as `0x${string}`,
         abi: tokenFactoryAbi,
         functionName: 'createToken',
@@ -69,28 +86,35 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
           symbol,
           currency,
           quoteToken as `0x${string}`,
-          address as `0x${string}`, // admin = connected wallet
+          address as `0x${string}`,
+          salt,
         ],
       })
     } catch (err: any) {
       console.error('Create token error:', err)
+      console.error('Error details:', {
+        message: err.message,
+        code: err.code,
+        data: err.data,
+      })
     }
   }
 
   // Extract created token address from receipt logs
   if (isSuccess && receipt && !createdToken) {
-    // Parse logs to get token address
-    const tokenCreatedLog = receipt.logs[0]
-    if (tokenCreatedLog) {
-      // Token address is typically in the first log
-      const tokenAddr = tokenCreatedLog.address
+    const tokenCreatedLog = receipt.logs.find(
+      log => log.address.toLowerCase() === TOKEN_FACTORY.toLowerCase() && log.topics.length >= 2
+    )
+    
+    if (tokenCreatedLog && tokenCreatedLog.topics[1]) {
+      const tokenAddr = `0x${tokenCreatedLog.topics[1].slice(-40)}` as `0x${string}`
       setCreatedToken(tokenAddr)
-      
+
       // Save token to storage
-      saveCreatedToken(tokenAddr, name, symbol).catch(err => {
+      saveCreatedToken(tokenAddr, name, symbol).catch((err: any) => {
         console.error('Failed to save token:', err)
       })
-      
+
       // Callback to parent
       if (onTokenCreated) {
         onTokenCreated(tokenAddr)
@@ -178,7 +202,7 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
           {/* Admin Info */}
           <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 border-2 border-indigo-200">
             <p className="text-sm text-indigo-700 mb-2">
-              🔐 <strong>Admin Address:</strong>
+              🔑 <strong>Admin Address:</strong>
             </p>
             <code className="block bg-white px-3 py-2 rounded text-xs font-mono break-all text-gray-800">
               {address || 'Connect wallet first'}
@@ -190,7 +214,7 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
           {writeError && (
             <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4">
               <p className="text-red-700 text-sm font-medium">
-                ❌ {writeError.message}
+                ⚠️ {writeError.message}
               </p>
             </div>
           )}
@@ -216,7 +240,7 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
               {name} Created Successfully!
             </h3>
           </div>
-          
+
           <div className="space-y-3 bg-white rounded-xl p-4">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Token Name:</span>
@@ -245,7 +269,7 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
               rel="noopener noreferrer"
               className="mt-4 block text-center text-green-700 hover:text-green-800 font-medium text-sm underline"
             >
-              📝 View on Explorer
+              🔗 View on Explorer
             </a>
           )}
 
