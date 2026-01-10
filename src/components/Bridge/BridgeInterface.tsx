@@ -4,7 +4,7 @@ import { BRIDGE_TOKENS, CCIPFeeOption } from '../../constants/ccip'
 import ChainSelector from './ChainSelector'
 import BridgeQuote from './BridgeQuote'
 import useBridge from '../../hooks/useBridge'
-import { parseTokenAmount, formatTokenAmount } from '../../utils/formatting'
+import { parseTokenAmount } from '../../utils/formatting'
 import TokenBalance from '../Common/TokenBalance'
 
 const AVAILABLE_CHAINS = [
@@ -16,11 +16,11 @@ export default function BridgeInterface() {
   const { isConnected, chainId } = useAccount()
   const { switchChainAsync } = useSwitchChain()
   
-  const [sourceChain, setSourceChain] = useState(42431) // Tempo
-  const [destinationChain, setDestinationChain] = useState(11155111) // Sepolia
+  const [sourceChain, setSourceChain] = useState<42431 | 11155111>(42431) // Tempo
+  const [destinationChain, setDestinationChain] = useState<42431 | 11155111>(11155111) // Sepolia
   const [amount, setAmount] = useState('')
   const [recipientAddress, setRecipientAddress] = useState('')
-  const [feeOption, setFeeOption] = useState<CCIPFeeOption>(CCIPFeeOption.NATIVE)
+  const [feeOption] = useState<CCIPFeeOption>(CCIPFeeOption.NATIVE)
 
   // Get token for current source chain (CCIP-BnM is the only token available on both chains)
   const selectedToken = BRIDGE_TOKENS['CCIP-BnM']

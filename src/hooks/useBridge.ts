@@ -7,7 +7,7 @@ import {
   CCIPFeeOption,
   CCIP_GAS_LIMITS 
 } from '../constants/ccip'
-import { isAddress, parseUnits, encodeFunctionData } from 'viem'
+import { isAddress, encodeFunctionData } from 'viem'
 
 interface UseBridgeProps {
   sourceChainId: number
@@ -315,7 +315,7 @@ export default function useBridge({
         address: routerAddress as `0x${string}`,
         abi: ccipRouterAbi,
         functionName: 'ccipSend',
-        args: [destinationSelector, ccipMessage],
+        args: [BigInt(destinationSelector), ccipMessage],
         value: feeOption === CCIPFeeOption.NATIVE ? estimatedFee : 0n,
       })
 
