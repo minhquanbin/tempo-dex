@@ -1,4 +1,4 @@
-import { formatTokenAmount, CCIP_BNM_DECIMALS } from '../../utils/formatting'
+import { formatTokenAmount } from '../../utils/formatting'
 import { ESTIMATED_BRIDGE_TIME } from '../../constants/ccip'
 
 interface BridgeQuoteProps {
@@ -8,6 +8,7 @@ interface BridgeQuoteProps {
   sourceChain: string
   destinationChain: string
   estimatedTime?: number
+  decimals?: number
 }
 
 function BridgeQuote({
@@ -17,8 +18,9 @@ function BridgeQuote({
   sourceChain,
   destinationChain,
   estimatedTime = ESTIMATED_BRIDGE_TIME.NORMAL,
+  decimals = 18, // Default to 18 for CCIP-BnM
 }: BridgeQuoteProps) {
-  const feeInToken = formatTokenAmount(fee)
+  const feeInToken = formatTokenAmount(fee, decimals, 6)
   const amountToReceive = amount
 
   const formatTime = (seconds: number) => {
@@ -45,7 +47,7 @@ function BridgeQuote({
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">Amount to Bridge</span>
           <span className="font-semibold text-gray-800">
-            {formatTokenAmount(amount)} {tokenSymbol}
+            {formatTokenAmount(amount, decimals, 6)} {tokenSymbol}
           </span>
         </div>
 
@@ -67,7 +69,7 @@ function BridgeQuote({
           <div className="flex justify-between">
             <span className="text-sm text-gray-600">You'll Receive</span>
             <span className="font-bold text-lg text-indigo-700">
-              {formatTokenAmount(amountToReceive)} {tokenSymbol}
+              {formatTokenAmount(amountToReceive, decimals, 6)} {tokenSymbol}
             </span>
           </div>
         </div>
