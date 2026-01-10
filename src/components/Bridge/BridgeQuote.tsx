@@ -20,7 +20,6 @@ function BridgeQuote({
 }: BridgeQuoteProps) {
   const feeInToken = formatTokenAmount(fee)
   const amountToReceive = amount
-  const totalCost = amount + fee
 
   const formatTime = (seconds: number) => {
     if (seconds < 60) return `${seconds}s`

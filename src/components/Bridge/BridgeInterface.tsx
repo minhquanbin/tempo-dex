@@ -56,8 +56,10 @@ export default function BridgeInterface() {
   }
 
   const handleFlipChains = () => {
-    setSourceChain(destinationChain)
-    setDestinationChain(sourceChain)
+    const newSource = destinationChain
+    const newDest = sourceChain
+    setSourceChain(newSource)
+    setDestinationChain(newDest)
     setAmount('')
   }
 
@@ -115,7 +117,7 @@ export default function BridgeInterface() {
           <ChainSelector
             selected={sourceChain}
             options={AVAILABLE_CHAINS.filter(c => c.id !== destinationChain)}
-            onChange={setSourceChain}
+            onChange={(chainId) => setSourceChain(chainId as 42431 | 11155111)}
             label="From Chain"
           />
 
@@ -168,7 +170,7 @@ export default function BridgeInterface() {
           <ChainSelector
             selected={destinationChain}
             options={AVAILABLE_CHAINS.filter(c => c.id !== sourceChain)}
-            onChange={setDestinationChain}
+            onChange={(chainId) => setDestinationChain(chainId as 42431 | 11155111)}
             label="To Chain"
           />
 
