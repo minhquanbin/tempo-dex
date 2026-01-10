@@ -24,3 +24,4 @@ dist-ssr
 *.sw?
 # Automation scripts (private)
 automation/
+automation-iss/

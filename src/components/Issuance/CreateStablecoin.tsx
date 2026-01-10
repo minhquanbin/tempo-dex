@@ -3,7 +3,7 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagm
 import { TOKENS } from '../../constants/tokens'
 import { saveCreatedToken } from './TokenSelectorForIssuance'
 
-// TIP-20 Token Factory ABI (CORRECT - 5 parameters from actual transaction!)
+// TIP-20 Token Factory ABI (CORRECT - 6 parameters with salt!)
 const tokenFactoryAbi = [
   {
     inputs: [
@@ -12,6 +12,7 @@ const tokenFactoryAbi = [
       { name: 'currency', type: 'string' },
       { name: 'quoteToken', type: 'address' },
       { name: 'admin', type: 'address' },
+      { name: 'salt', type: 'bytes32' }, // ✅ THÊM SALT
     ],
     name: 'createToken',
     outputs: [{ name: 'token', type: 'address' }],
@@ -35,14 +36,14 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
   const [quoteToken, setQuoteToken] = useState('0x20c0000000000000000000000000000000000000') // pathUSD default
   const [createdToken, setCreatedToken] = useState<string>('')
 
-  const {
-    writeContract,
+  const { 
+    writeContract, 
     data: hash,
     isPending,
     error: writeError,
   } = useWriteContract()
 
-  const {
+  const { 
     isLoading: isConfirming,
     isSuccess,
     data: receipt
@@ -52,7 +53,7 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-
+    
     if (!name || !symbol || !currency || !address) {
       alert('Please fill all fields and connect wallet')
       return
@@ -78,24 +79,18 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
 
   // Extract created token address from receipt logs
   if (isSuccess && receipt && !createdToken) {
-    // Find the TokenCreated event log from Factory
-    const tokenCreatedLog = receipt.logs.find(
-      log => log.address.toLowerCase() === TOKEN_FACTORY.toLowerCase() && log.topics.length >= 2
-    )
-    
-    if (tokenCreatedLog && tokenCreatedLog.topics[1]) {
-      // Token address is in topics[1], need to convert from bytes32 to address
-      // Remove '0x' prefix, take last 40 chars (20 bytes = address), add '0x' back
-      const tokenAddr = `0x${tokenCreatedLog.topics[1].slice(-40)}` as `0x${string}`
+    // Parse logs to get token address
+    const tokenCreatedLog = receipt.logs[0]
+    if (tokenCreatedLog) {
+      // Token address is typically in the first log
+      const tokenAddr = tokenCreatedLog.address
       setCreatedToken(tokenAddr)
-
+      
       // Save token to storage
-      saveCreatedToken({
-        address: tokenAddr,
-        name,
-        symbol
+      saveCreatedToken(tokenAddr, name, symbol).catch(err => {
+        console.error('Failed to save token:', err)
       })
-
+      
       // Callback to parent
       if (onTokenCreated) {
         onTokenCreated(tokenAddr)
@@ -183,7 +178,7 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
           {/* Admin Info */}
           <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 border-2 border-indigo-200">
             <p className="text-sm text-indigo-700 mb-2">
-              🔑 <strong>Admin Address:</strong>
+              🔐 <strong>Admin Address:</strong>
             </p>
             <code className="block bg-white px-3 py-2 rounded text-xs font-mono break-all text-gray-800">
               {address || 'Connect wallet first'}
@@ -195,7 +190,7 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
           {writeError && (
             <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4">
               <p className="text-red-700 text-sm font-medium">
-                ⚠️ {writeError.message}
+                ❌ {writeError.message}
               </p>
             </div>
           )}
@@ -221,7 +216,7 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
               {name} Created Successfully!
             </h3>
           </div>
-
+          
           <div className="space-y-3 bg-white rounded-xl p-4">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Token Name:</span>
@@ -250,7 +245,7 @@ export default function CreateStablecoin({ onTokenCreated }: CreateStablecoinPro
               rel="noopener noreferrer"
               className="mt-4 block text-center text-green-700 hover:text-green-800 font-medium text-sm underline"
             >
-              🔗 View on Explorer
+              📝 View on Explorer
             </a>
           )}
 
