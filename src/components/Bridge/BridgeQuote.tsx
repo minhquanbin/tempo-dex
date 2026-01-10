@@ -1,4 +1,4 @@
-import { formatTokenAmount } from '../../utils/formatting'
+import { formatTokenAmount, CCIP_BNM_DECIMALS } from '../../utils/formatting'
 import { ESTIMATED_BRIDGE_TIME } from '../../constants/ccip'
 
 interface BridgeQuoteProps {

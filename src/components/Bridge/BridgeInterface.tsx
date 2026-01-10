@@ -3,9 +3,10 @@ import { useAccount, useSwitchChain } from 'wagmi'
 import { BRIDGE_TOKENS, CCIPFeeOption } from '../../constants/ccip'
 import ChainSelector from './ChainSelector'
 import BridgeQuote from './BridgeQuote'
+import BridgeTokenBalance from './BridgeTokenBalance'
 import useBridge from '../../hooks/useBridge'
 import { parseTokenAmount } from '../../utils/formatting'
-import TokenBalance from '../Common/TokenBalance'
+import { CCIP_BNM_DECIMALS } from '../../utils/formatting'
 
 const AVAILABLE_CHAINS = [
   { id: 42431, name: 'Tempo Testnet', icon: '⚡' },
@@ -40,7 +41,7 @@ export default function BridgeInterface() {
     sourceChainId: sourceChain,
     destinationChainId: destinationChain,
     tokenAddress,
-    amount: amount ? parseTokenAmount(amount) : 0n,
+    amount: amount ? parseTokenAmount(amount, CCIP_BNM_DECIMALS) : 0n, // 18 decimals for CCIP-BnM
     recipientAddress: recipientAddress || undefined,
     feeOption,
   })
@@ -125,7 +126,7 @@ export default function BridgeInterface() {
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="text-sm font-semibold text-gray-600">Amount</label>
-              {tokenAddress && <TokenBalance token={tokenAddress} />}
+              {tokenAddress && <BridgeTokenBalance token={tokenAddress} tokenSymbol={selectedToken.symbol} />}
             </div>
             <div className="relative bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-4 border-2 border-purple-200">
               <div className="flex gap-3 items-center">
@@ -191,11 +192,12 @@ export default function BridgeInterface() {
           {/* Bridge Quote */}
           {estimatedFee && amount && sourceChainInfo && destChainInfo && (
             <BridgeQuote
-              amount={parseTokenAmount(amount)}
+              amount={parseTokenAmount(amount, CCIP_BNM_DECIMALS)}
               fee={estimatedFee}
               tokenSymbol={selectedToken.symbol}
               sourceChain={sourceChainInfo.name}
               destinationChain={destChainInfo.name}
+              decimals={CCIP_BNM_DECIMALS}
             />
           )}
 
