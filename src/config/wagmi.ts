@@ -1,5 +1,6 @@
 import { http, createConfig } from 'wagmi'
 import { defineChain } from 'viem'
+import { sepolia } from 'wagmi/chains'
 
 // Tempo Moderato Testnet (NEW - March 2025)
 export const tempoTestnet = defineChain({
@@ -27,11 +28,12 @@ export const tempoTestnet = defineChain({
   testnet: true,
 })
 
-// Create Wagmi config
+// Create Wagmi config with both chains
 export const config = createConfig({
-  chains: [tempoTestnet],
+  chains: [tempoTestnet, sepolia],
   transports: {
     [tempoTestnet.id]: http(),
+    [sepolia.id]: http(),
   },
 })
 

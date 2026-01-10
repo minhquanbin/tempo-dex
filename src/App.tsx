@@ -7,11 +7,12 @@ import SwapInterface from './components/Swap/SwapInterface'
 import AddLiquidity from './components/Liquidity/AddLiquidity'
 import PaymentInterface from './components/Payment/PaymentInterface'
 import IssuanceInterface from './components/Issuance/IssuanceInterface'
+import BridgeInterface from './components/Bridge/BridgeInterface'
 
 const queryClient = new QueryClient()
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'swap' | 'liquidity' | 'payment' | 'issuance'>('swap')
+  const [activeTab, setActiveTab] = useState<'swap' | 'liquidity' | 'payment' | 'issuance' | 'bridge'>('swap')
 
   return (
     <WagmiProvider config={config}>
@@ -27,7 +28,7 @@ function App() {
                     <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                       Tempo DEX
                     </h1>
-                    <p className="text-xs text-gray-500">Swap & Pay on Tempo Network</p>
+                    <p className="text-xs text-gray-500">Swap, Bridge & Pay on Tempo Network</p>
                   </div>
                 </div>
                 <ConnectWallet />
@@ -39,7 +40,7 @@ function App() {
           <main className="max-w-2xl mx-auto px-4 py-8">
             {/* Tab Selector */}
             <div className="bg-white rounded-2xl shadow-lg p-2 mb-6">
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-5 gap-2">
                 <button
                   onClick={() => setActiveTab('swap')}
                   className={`py-3 px-4 rounded-xl font-semibold transition-all ${
@@ -49,6 +50,16 @@ function App() {
                   }`}
                 >
                   🔄 Swap
+                </button>
+                <button
+                  onClick={() => setActiveTab('bridge')}
+                  className={`py-3 px-4 rounded-xl font-semibold transition-all ${
+                    activeTab === 'bridge'
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  🌉 Bridge
                 </button>
                 <button
                   onClick={() => setActiveTab('liquidity')}
@@ -86,24 +97,53 @@ function App() {
             {/* Content */}
             <div className="animate-fadeIn">
               {activeTab === 'swap' && <SwapInterface />}
+              {activeTab === 'bridge' && <BridgeInterface />}
               {activeTab === 'liquidity' && <AddLiquidity />}
               {activeTab === 'payment' && <PaymentInterface />}
               {activeTab === 'issuance' && <IssuanceInterface />}
             </div>
 
             {/* Footer Info */}
-            <div className="mt-8 text-center">
-              <p className="text-sm text-gray-500 mb-2">
-                Powered by Tempo Network | Testnet
-              </p>
-              <a
-                href="https://docs.tempo.xyz"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-indigo-600 hover:text-indigo-700 underline"
-              >
-                📚 Documentation
-              </a>
+            <div className="mt-8 text-center space-y-3">
+              <div className="flex items-center justify-center gap-4 text-sm text-gray-500">
+                <span>Powered by Tempo Network</span>
+                <span>•</span>
+                <span>Testnet</span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <span>🔗</span>
+                  <span>Chainlink CCIP</span>
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-center gap-4">
+                <a
+                  href="https://docs.tempo.xyz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-indigo-600 hover:text-indigo-700 underline"
+                >
+                  📚 Tempo Docs
+                </a>
+                <span className="text-gray-300">|</span>
+                <a
+                  href="https://docs.chain.link/ccip"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:text-blue-700 underline"
+                >
+                  🔗 CCIP Docs
+                </a>
+                <span className="text-gray-300">|</span>
+                <a
+                  href="https://ccip.chain.link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-purple-600 hover:text-purple-700 underline"
+                >
+                  🔍 CCIP Explorer
+                </a>
+              </div>
             </div>
           </main>
         </div>
